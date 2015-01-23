@@ -1,0 +1,6 @@
+/.classpath
+/.project
+/last_timestamp.txt
+/.settings/
+/target/
+**/.DS_Store
