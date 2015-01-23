@@ -1,10 +1,11 @@
 package com.mongodb.flightdemo;
 
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
@@ -12,10 +13,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
 import org.geotools.data.FeatureSource;
@@ -28,7 +31,6 @@ import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.swing.JMapPane;
-import org.geotools.swing.RenderingExecutorEvent;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Component;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.flightxml.GeoTrackGenerator;
 import com.mongodb.oplog.OplogEventListener;
 import com.mongodb.replication.ReplicationManager;
 
@@ -48,6 +51,9 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
     @Autowired
     private ReplicationManager replicationManager;
+    
+    @Autowired
+    private GeoTrackGenerator geoTrackGenerator;
 
     protected static final Logger logger = LoggerFactory.getLogger(FlightDisplay.class);
 
@@ -140,24 +146,59 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         icon = new ImageIcon(image).getImage();
         return icon;
     }
+    
+    private void buildGui() {
+        JFrame frame = new JFrame("MongoDB Replication Demo");
+        frame.getContentPane().add(this);
+        
+        JMenuBar menuBar = new JMenuBar();
+        JMenu dataMenu = new JMenu("Data");
+        final JMenuItem startGenerator = new JMenuItem("Start Generator");
+        final JMenuItem stopGenerator = new JMenuItem("Stop Generator");
+        startGenerator.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                stopGenerator.setEnabled(true);
+                startGenerator.setEnabled(false);
+                geoTrackGenerator.startGenerator();
+            }});
+        dataMenu.add(startGenerator);
+        
+        stopGenerator.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                stopGenerator.setEnabled(false);
+                startGenerator.setEnabled(true);
+                geoTrackGenerator.stopGenerator();
+            }});
+        stopGenerator.setEnabled(false);
+        dataMenu.add(stopGenerator);
+        menuBar.add(dataMenu);
+
+        // frame.setSize(640, 480);
+        frame.setSize(2048, 1024);
+        frame.setJMenuBar(menuBar);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
 
     // Main application method
     public static void main(String[] args) throws Exception {
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring-context.xml");
         context.registerShutdownHook();
-
-        JFrame frame = new JFrame("Animation example");
-        // FlightMap flightMap = new FlightMap();
+        
+        try {
+            System.setProperty("apple.laf.useScreenMenuBar", "true");
+            System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Replication Demo");
+            //System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Name");
+        } catch(Exception e) {
+            // ignore
+        }
+        
         FlightDisplay flightMap = context.getBean(FlightDisplay.class);
-
-        frame.getContentPane().add(flightMap);
-
-        // frame.setSize(640, 480);
-        frame.setSize(2048, 1024);
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
-        Thread.sleep(5000);
+        flightMap.buildGui();
+        Thread.sleep(3000);
         flightMap.init();
     }
 

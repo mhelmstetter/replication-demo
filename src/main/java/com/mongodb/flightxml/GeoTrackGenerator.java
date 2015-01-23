@@ -14,9 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Component;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -30,95 +30,138 @@ import com.mongodb.MongoClient;
 import com.mongodb.flightxml.domain.FlightDetails;
 import com.mongodb.flightxml.domain.Track;
 
-@Component
-public class GeoTrackGenerator {
-    
-    protected final static ApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-track-generator.xml");
-    
+public class GeoTrackGenerator implements Runnable {
+
+
     protected static final Logger logger = LoggerFactory.getLogger(GeoTrackGenerator.class);
-    
+
     @Autowired
     ResourceLoader resourceLoader;
-    
-    @Autowired
-    MongoClient mongo;
-    
-    private static Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-    
-    private List<FlightDetails> flightDetailsList = new ArrayList<FlightDetails>();
-    
+
+    MongoClient mongoClient;
+
+    private static Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .create();
+
+    private List<FlightDetails> flightDetailsList;
+
     DBCollection flightTrack;
+
+    private Thread thread;
+
+    private boolean requestStop = false;
     
+    private int maxFlights = 100;
+
     @PostConstruct
     private void init() {
-        DB db = mongo.getDB("track");
+        DB db = mongoClient.getDB("track");
         flightTrack = db.getCollection("flightTrack");
-        //flightTrack.drop();
-        
+        // flightTrack.drop();
     }
-    
-    private void generate() throws IOException, InterruptedException {
-        
-        //InputStream is = resourceLoader.getResource("classpath:data/1track.json").getInputStream();
+
+    private void readData() {
+        BufferedReader reader = null;
+        try {
+        flightDetailsList = new ArrayList<FlightDetails>();
         InputStream is = resourceLoader.getResource("classpath:data/tracks.json").getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        
+        reader = new BufferedReader(new InputStreamReader(is));
+
         String currentLine = null;
         int lineCount = 0;
-        while ((currentLine = reader.readLine()) != null) {
+        while ((currentLine = reader.readLine()) != null && lineCount < maxFlights) {
             if (currentLine.length() == 0) {
                 continue;
             }
-            
+
             FlightDetails flightDetails = gson.fromJson(currentLine, FlightDetails.class);
             flightDetailsList.add(flightDetails);
-            
+
             lineCount++;
         }
         logger.debug("Read " + lineCount);
-        reader.close();
         
-        int iteration = 0;
-        while (true) {
-            Track track = null;
-            for (Iterator<FlightDetails> i = flightDetailsList.iterator(); i.hasNext();) {
-                FlightDetails flightDetails = i.next();
-                track = flightDetails.getNextTrack();
-                if (track == null) {
-                    //logger.debug("No more tracks " + flightDetails.getTrackPosition() + " " + flightDetails);
-                    i.remove();
-                    continue;
-                }
-                
-                DBObject geoTrack = new BasicDBObject();
-                geoTrack.put("flightNum", flightDetails.getFlight());
-                geoTrack.put("fromIata", flightDetails.getFromIata());
-                geoTrack.put("toIata", flightDetails.getToIata());
-                geoTrack.put("aircraft", flightDetails.getAircraft());
-                BasicDBList latLong = new BasicDBList();
-                latLong.add(track.getLat());
-                latLong.add(track.getLon());
-                geoTrack.put("position", latLong);
-                geoTrack.put("altitude", track.getAltitude());
-                
-                flightTrack.insert(geoTrack);
-                
-                
+        } catch (IOException ioe) {
+            logger.error("Error reading data", ioe);
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException e) {
             }
-            if (flightDetailsList.size() == 0) {
-                break;
-            }
-            logger.debug("Iteration " + iteration++ + " " + flightDetailsList.size());
-            Thread.sleep(500);
         }
-        
     }
-    
+
+    @Override
+    public void run() {
+        logger.debug("Starting to generate");
+        int iteration = 0;
+        try {
+            while (true) {
+                if (requestStop) {
+                    break;
+                }
+                Track track = null;
+                for (Iterator<FlightDetails> i = flightDetailsList.iterator(); i.hasNext();) {
+                    FlightDetails flightDetails = i.next();
+                    track = flightDetails.getNextTrack();
+                    if (track == null) {
+                        // logger.debug("No more tracks " +
+                        // flightDetails.getTrackPosition() + " " +
+                        // flightDetails);
+                        i.remove();
+                        continue;
+                    }
+
+                    DBObject geoTrack = new BasicDBObject();
+                    geoTrack.put("flightNum", flightDetails.getFlight());
+                    geoTrack.put("fromIata", flightDetails.getFromIata());
+                    geoTrack.put("toIata", flightDetails.getToIata());
+                    geoTrack.put("aircraft", flightDetails.getAircraft());
+                    BasicDBList latLong = new BasicDBList();
+                    latLong.add(track.getLat());
+                    latLong.add(track.getLon());
+                    geoTrack.put("position", latLong);
+                    geoTrack.put("altitude", track.getAltitude());
+
+                    flightTrack.insert(geoTrack);
+
+                }
+
+                logger.debug("Iteration " + iteration++ + " " + flightDetailsList.size());
+                if (flightDetailsList.size() == 0 || requestStop) {
+                    break;
+                }
+                Thread.sleep(500);
+            }
+        } catch (Exception ie) {
+            logger.warn("interrupted");
+        }
+    }
+
+    public void startGenerator() {
+        requestStop = false;
+        if (flightDetailsList == null) {
+            readData();
+        }
+
+        thread = new Thread(this, "GeoTrackGenerator");
+        thread.start();
+    }
+
+    public void stopGenerator() {
+        logger.debug("Stopping");
+        requestStop = true;
+    }
+
     public static void main(String[] args) throws Exception {
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext(
+                "spring-track-generator.xml");
         System.setProperty("file.encoding", "UTF-8");
         GeoTrackGenerator gen = applicationContext.getBean(GeoTrackGenerator.class);
-        
-        
-        gen.generate();
+        gen.startGenerator();
+    }
+
+    public void setMongoClient(MongoClient mongoClient) {
+        this.mongoClient = mongoClient;
     }
 }

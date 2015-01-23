@@ -19,13 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
-import com.mongodb.replication.domain.ReplicationSource;
 import com.mongodb.replication.domain.ReplicationSourceStatus;
 import com.wordnik.system.mongodb.MongoUtil;
 
 public class ReplicationUtil extends MongoUtil {
+    
+    protected static final Logger logger = LoggerFactory.getLogger(ReplicationUtil.class);
 
     protected String sourceHost = null;
     protected static String DATABASE_USER_NAME = null;
@@ -55,6 +59,9 @@ public class ReplicationUtil extends MongoUtil {
         this.sourceDatabasePort = replicationStatus.getReplicationSource().getPort();
         this.destinationDatabaseHost = destHost;
         this.destinationDatabasePort = destPort;
+        
+        
+        
         this.processor = processor;
         this.run();
     }
@@ -74,6 +81,8 @@ public class ReplicationUtil extends MongoUtil {
             }
         }
 
+        logger.debug(String.format("Configuring OplogReplayWriter destination %s:%s", destinationDatabaseHost, destinationDatabasePort));
+        
         oplogReplayWriter.setDestinationDatabaseUsername(DEST_DATABASE_USER_NAME);
         oplogReplayWriter.setDestinationDatabasePassword(DEST_DATABASE_PASSWORD);
         oplogReplayWriter.setDestinationDatabaseHost(destinationDatabaseHost);
@@ -81,7 +90,8 @@ public class ReplicationUtil extends MongoUtil {
 
         try {
             // create and configure a tail thread
-
+            
+            logger.debug(String.format("Configuring OplogTailThread source %s:%s", sourceHost, sourceDatabasePort));
             MongoClient mongoClient = new MongoClient(sourceHost, sourceDatabasePort);
             DBCollection coll = mongoClient.getDB("local").getCollection("oplog.rs");
 
