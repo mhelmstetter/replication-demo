@@ -60,8 +60,6 @@ public class ReplicationUtil extends MongoUtil {
         this.destinationDatabaseHost = destHost;
         this.destinationDatabasePort = destPort;
         
-        
-        
         this.processor = processor;
         this.run();
     }

@@ -26,7 +26,10 @@ class DrawingContext {
     // The rectangle (in world coordinates) that defines the flying
     // saucer's current position
     private ReferencedEnvelope spriteEnv;
-    Image image = new ImageIcon(DrawingContext.class.getResource("/images/plane.png")).getImage();
+    
+    private final static Image GREEN_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane.png")).getImage();
+    
+    private Image image;
 
     private FlightInfo flightInfo;
 
