@@ -87,6 +87,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         Rectangle bounds = context.getSpriteScreenPos();
         Raster background = null;
         if (bounds != null) {
+            // TODO this can potentially throw ArrayIndexOutOfBoundsException "Coordinate out of bounds!"
             background = getBaseImage().getData(context.getSpriteScreenPos());
         }
 

@@ -60,7 +60,7 @@ public class GeoTrackGenerator {
     private void generate() throws IOException, InterruptedException {
         
         //InputStream is = resourceLoader.getResource("classpath:data/1track.json").getInputStream();
-        InputStream is = resourceLoader.getResource("classpath:data/tracks100.json").getInputStream();
+        InputStream is = resourceLoader.getResource("classpath:data/tracks.json").getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         
         String currentLine = null;
