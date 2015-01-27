@@ -203,6 +203,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     }
 
     private void init() throws IOException {
+        replicationManager.addOplogEventListener(this);
         replicationManager.start();
     }
 
@@ -211,8 +212,10 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         DBObject obj = (DBObject) x.get("o");
         String flightNum = (String) obj.get("flightNum");
         BasicDBList positions = (BasicDBList) obj.get("position");
+        String airline = (String)obj.get("airline");
 
         FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
+        flightInfo.setAirline(airline);
 
         final DrawingContext context = drawingContexts.get(flightNum);
         if (context != null) {

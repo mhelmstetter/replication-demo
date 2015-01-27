@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
 	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
@@ -19,20 +19,36 @@
 				<constructor-arg type="int" value="37017" />
 			</bean>
 		</property>
+		<property name="outputDatabaseName" value="region" />
+		<property name="outputCollectionName" value="flightTrack" />
 
 	</bean>
 
-	<bean id="mongo" class="com.mongodb.MongoClient">
 
+	<!-- MongoClient and MongoTemplate used by the ReplicationSourceRepository 
+		for reading the replcation configuration -->
+	<bean id="mongo" class="com.mongodb.MongoClient">
 		<constructor-arg type="java.lang.String" value="localhost" />
 		<constructor-arg type="int" value="27017" />
 	</bean>
-	<mongo:db-factory id="mongoDbFactory" dbname="mongoRep"
-		mongo-ref="mongo" />
-
-
+	<mongo:db-factory id="mongoDbFactory" dbname="replicationConfig" mongo-ref="mongo" />
+	<bean id="mappingContext"
+		class="org.springframework.data.mongodb.core.mapping.MongoMappingContext" />
+	<bean id="defaultMongoTypeMapper"
+		class="org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper">
+		<constructor-arg name="typeKey">
+			<null />
+		</constructor-arg>
+	</bean>
+	<bean id="mappingMongoConverter"
+		class="org.springframework.data.mongodb.core.convert.MappingMongoConverter">
+		<constructor-arg name="mongoDbFactory" ref="mongoDbFactory" />
+		<constructor-arg name="mappingContext" ref="mappingContext" />
+		<property name="typeMapper" ref="defaultMongoTypeMapper" />
+	</bean>
 	<bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
 		<constructor-arg name="mongoDbFactory" ref="mongoDbFactory" />
+		<constructor-arg name="mongoConverter" ref="mappingMongoConverter" />
 	</bean>
 
 	<mongo:repositories base-package="com.mongodb.replication.repository" />

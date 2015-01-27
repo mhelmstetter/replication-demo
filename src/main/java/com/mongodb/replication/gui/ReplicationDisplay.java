@@ -10,7 +10,6 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -24,24 +23,20 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.UIManager;
 import javax.swing.table.TableCellRenderer;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.gui.DataTableModel;
 import com.mongodb.gui.util.EclipseIcons;
-import com.mongodb.gui.util.JDesktopPaneUtils;
 import com.mongodb.oplog.MongoConnectionDialog;
-import com.mongodb.oplog.ReplicationUtil;
 import com.mongodb.replication.domain.ReplicationSource;
 import com.mongodb.replication.domain.ReplicationSourceStatus;
-import com.mongodb.replication.repository.ReplicationSourceRepository;
+import com.mongodb.replication.repository.ReplicationConfigRepository;
 
 public class ReplicationDisplay extends JPanel {
 
@@ -49,7 +44,7 @@ public class ReplicationDisplay extends JPanel {
     private EclipseIcons eclipseIcons;
 
     @Autowired
-    private ReplicationSourceRepository replicationSourceRepository;
+    private ReplicationConfigRepository replicationSourceRepository;
 
     private JDesktopPane desktop;
 
@@ -83,18 +78,18 @@ public class ReplicationDisplay extends JPanel {
 //        source2.setPort(47017);
 //        replicationSourceRepository.save(source2);
 
-        Iterator<ReplicationSource> i = replicationSourceRepository.findAll().iterator();
-        while (i.hasNext()) {
-            ReplicationSource replicationSource = i.next();
-            addReplicationSource(replicationSource);
-            
-            
-            
-            //replicationSourcesData.add(replicationSource.getHostname());
-            //replicationSourcesData.add(replicationSource.getPort());
-            
-            
-        }
+//        Iterator<ReplicationSource> i = replicationSourceRepository.findAll().iterator();
+//        while (i.hasNext()) {
+//            ReplicationSource replicationSource = i.next();
+//            addReplicationSource(replicationSource);
+//            
+//            
+//            
+//            //replicationSourcesData.add(replicationSource.getHostname());
+//            //replicationSourcesData.add(replicationSource.getPort());
+//            
+//            
+//        }
 
     }
 
@@ -166,7 +161,7 @@ public class ReplicationDisplay extends JPanel {
         
         DisplayOplogRecordProcessor processor = new DisplayOplogRecordProcessor(oplogEntryTable, replicationStatus, replicationStatusTableModel);
         
-        ReplicationUtil util = new ReplicationUtil(replicationStatus, "localhost", 27017, processor);
+        //ReplicationUtil util = new ReplicationUtil(replicationStatus, "localhost", 27017, processor);
         //ReplicationUtil util = new ReplicationUtil(replicationStatus, "localhost", 27017);
     }
 

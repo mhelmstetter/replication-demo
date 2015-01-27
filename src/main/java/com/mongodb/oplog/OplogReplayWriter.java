@@ -12,17 +12,15 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.replication.domain.CollectionMapping;
+import com.mongodb.replication.domain.DatabaseMapping;
+import com.mongodb.replication.domain.ReplicationTarget;
 
 public class OplogReplayWriter implements OplogEventListener {
 	protected static Map<String, String> COLLECTION_MAPPING = new HashMap<String, String>();
 	protected static Map<String, String> DATABASE_MAPPING = new HashMap<String, String>();
 	protected static Map<String, String> NAMESPACE_COLLECTION_MAP = new HashMap<String, String>();
 	protected static Map<String, String> UNMAPPED_NAMESPACE_COLLECTION_MAP = new HashMap<String, String>();
-
-	protected String destinationDatabaseUsername;
-	protected String destinationDatabasePassword;
-	protected String destinationDatabaseHost;
-	protected int destinationDatabasePort = 27017;
 
 	protected long insertCount;
 	protected long updateCount;
@@ -31,7 +29,20 @@ public class OplogReplayWriter implements OplogEventListener {
 	
 	MongoClient mongoClient;
 	
+	public OplogReplayWriter() {
+	}
 	
+	public OplogReplayWriter(ReplicationTarget rep) throws UnknownHostException {
+	    mongoClient = new MongoClient(rep.getHostname(), rep.getPort());
+	    
+	    for (DatabaseMapping dbm : rep.getDatabaseMappings()) {
+	        this.addDatabaseMapping(dbm.getSourceDatabaseName(), dbm.getDestinationDatabaseName());
+	    }
+	    
+	    for (CollectionMapping cm : rep.getCollectionMappings()) {
+	       this.addCollectionMapping(cm.getSourceCollectionName(), cm.getDestinationCollectionName()); 
+	    }
+	}
 	
 	public void addDatabaseMapping(String src, String dst){
 		DATABASE_MAPPING.put(src, dst);
@@ -65,50 +76,20 @@ public class OplogReplayWriter implements OplogEventListener {
 		return commandCount;
 	}
 
-	public String getDestinationDatabaseUsername() {
-		return destinationDatabaseUsername;
-	}
 
-	public void setDestinationDatabaseUsername(String destinationDatabaseUsername) {
-		this.destinationDatabaseUsername = destinationDatabaseUsername;
-	}
-
-	public String getDestinationDatabasePassword() {
-		return destinationDatabasePassword;
-	}
-
-	public void setDestinationDatabasePassword(String destinationDatabasePassword) {
-		this.destinationDatabasePassword = destinationDatabasePassword;
-	}
-
-	public String getDestinationDatabaseHost() {
-		return destinationDatabaseHost;
-	}
-
-	public void setDestinationDatabaseHost(String destinationDatabaseHost) {
-		this.destinationDatabaseHost = destinationDatabaseHost;
-	}
-	
-	public MongoClient getMongoClient() throws UnknownHostException {
-	    if (mongoClient == null) {
-	        mongoClient = new MongoClient(destinationDatabaseHost, destinationDatabasePort); 
-	    }
-	    return mongoClient;
-	}
 
 	@Override
 	public void processRecord(BasicDBObject dbo) throws Exception {
 		String operationType = dbo.getString("op");
 		String namespace = dbo.getString("ns");
 		String targetCollection = getMappedCollectionFromNamespace(namespace);
-		BasicDBObject operation = new BasicDBObject((BasicBSONObject)dbo.get("o"));
 		String targetDatabase = getDatabaseMapping(namespace);
 		
-		MongoClient client = getMongoClient();
+		BasicDBObject operation = new BasicDBObject((BasicBSONObject)dbo.get("o"));
 		
 		if(shouldProcessRecord(targetDatabase, targetCollection)){
 			//DB db = MongoDBConnectionManager.getConnection("REPLAY", destinationDatabaseHost, targetDatabase, destinationDatabaseUsername, destinationDatabasePassword, SchemaType.READ_WRITE());
-			DB db = client.getDB(targetDatabase);
+			DB db = mongoClient.getDB(targetDatabase);
 		    DBCollection coll = db.getCollection(targetCollection);
 	
 			try{
@@ -236,17 +217,13 @@ public class OplogReplayWriter implements OplogEventListener {
 	@Override
 	public void close(String string) throws IOException {}
 
-    public int getDestinationDatabasePort() {
-        return destinationDatabasePort;
-    }
-
-    public void setDestinationDatabasePort(int destinationDatabasePort) {
-        this.destinationDatabasePort = destinationDatabasePort;
-    }
-
     @Override
     public void stats(long count, long skips, long duration, int lastTimestamp) {
         // TODO Auto-generated method stub
         
+    }
+
+    public void setMongoClient(MongoClient mongoClient) {
+        this.mongoClient = mongoClient;
     }
 }

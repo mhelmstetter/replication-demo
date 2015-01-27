@@ -14,10 +14,13 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.mongodb.oplog.OplogEventListener;
-import com.mongodb.oplog.ReplicationUtil;
+import com.mongodb.oplog.OplogReplayWriter;
+import com.mongodb.oplog.OplogTailThread;
+import com.mongodb.replication.domain.DatabaseMapping;
+import com.mongodb.replication.domain.ReplicationConfig;
+import com.mongodb.replication.domain.ReplicationTarget;
 import com.mongodb.replication.domain.ReplicationSource;
-import com.mongodb.replication.domain.ReplicationSourceStatus;
-import com.mongodb.replication.repository.ReplicationSourceRepository;
+import com.mongodb.replication.repository.ReplicationConfigRepository;
 
 @Component
 @Lazy
@@ -26,24 +29,41 @@ public class ReplicationManager {
     protected static final Logger logger = LoggerFactory.getLogger(ReplicationManager.class);
 
     @Autowired
-    private ReplicationSourceRepository replicationSourceRepository;
+    private ReplicationConfigRepository replicationConfigRepository;
     
-    // A local cache of all replication sources
-    private List<ReplicationSource> replicationSources;
-    private List<ReplicationUtil> replicationUtils;
+    private List<OplogTailThread> oplogTailThreads;
     
-    @Autowired
-    OplogEventListener processor;
+    private List<OplogEventListener> oplogEventListeners;
+    
+    public ReplicationManager() {
+        oplogTailThreads = new ArrayList<OplogTailThread>();
+        oplogEventListeners = new ArrayList<OplogEventListener>();
+    }
+    
+    public void initializeTestConfig() {
+        ReplicationConfig config = new ReplicationConfig();
+        config.setId(1L);
+        ReplicationSource source1 = new ReplicationSource();
+        source1.setHostname("localhost");
+        source1.setPort(37017);
+        source1.setOplogBaseQuery("{'o.airline':{$exists:true}}");
+        config.addReplicationSource(source1);
+        
+        ReplicationTarget replicationTarget = new ReplicationTarget();
+        replicationTarget.setHostname("localhost");
+        replicationTarget.setPort(27017);
+        replicationTarget.addDatabaseMapping(new DatabaseMapping("region", "world"));
+        config.setReplicationTarget(replicationTarget);
+        
+        replicationConfigRepository.save(config);
+    }
 
     //@PostConstruct
     public void start() throws IOException {
-
-        replicationSources = new ArrayList<ReplicationSource>();
-        replicationUtils = new ArrayList<ReplicationUtil>();
         
-        // ReplicationSource source1 = new ReplicationSource();
-        // source1.setHostname("localhost");
-        // source1.setPort(37017);
+        initializeTestConfig();
+
+         
         // replicationSourceRepository.save(source1);
         //
         // ReplicationSource source2 = new ReplicationSource();
@@ -51,23 +71,36 @@ public class ReplicationManager {
         // source2.setPort(47017);
         // replicationSourceRepository.save(source2);
 
-        Iterator<ReplicationSource> i = replicationSourceRepository.findAll().iterator();
+        Iterator<ReplicationConfig> i = replicationConfigRepository.findAll().iterator();
         while (i.hasNext()) {
-            ReplicationSource replicationSource = i.next();
-            logger.debug("Initializing " + replicationSource);
-            ReplicationSourceStatus replicationStatus = new ReplicationSourceStatus(replicationSource);
-
-            ReplicationUtil util = new ReplicationUtil(replicationStatus, "localhost", 27017, processor);
-            replicationUtils.add(util);
+            ReplicationConfig config = i.next();
+            logger.debug("ReplicationConfig " + config);
+            
+            OplogReplayWriter oplogReplayWriter = new OplogReplayWriter(config.getReplicationTarget());
+            oplogEventListeners.add(oplogReplayWriter);
+            
+            
+            for (ReplicationSource replicationSource : config.getReplicationSources()) {
+                OplogTailThread oplogTailThread = new OplogTailThread(replicationSource);
+                for (OplogEventListener listener : oplogEventListeners) {
+                    oplogTailThread.addOplogProcessor(listener);
+                }
+                oplogTailThread.start();
+                oplogTailThreads.add(oplogTailThread);
+            }
         }
 
+    }
+    
+    public void addOplogEventListener(OplogEventListener listener) {
+        oplogEventListeners.add(listener);
     }
     
     @PreDestroy
     public void shutdown() {
         logger.debug("******* Starting shutdown");
-        for (ReplicationUtil util : replicationUtils) {
-            util.requestStop();
+        for (OplogTailThread thread : oplogTailThreads) {
+            thread.requestStop();
         }
         logger.debug("******* Finished shutdown");
     }

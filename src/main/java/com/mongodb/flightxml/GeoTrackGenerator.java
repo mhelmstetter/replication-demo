@@ -43,6 +43,10 @@ public class GeoTrackGenerator implements Runnable {
     private static Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
 
+    private String outputDatabaseName;
+    
+    private String outputCollectionName;
+    
     private List<FlightDetails> flightDetailsList;
 
     DBCollection flightTrack;
@@ -55,8 +59,8 @@ public class GeoTrackGenerator implements Runnable {
 
     @PostConstruct
     private void init() {
-        DB db = mongoClient.getDB("track");
-        flightTrack = db.getCollection("flightTrack");
+        DB db = mongoClient.getDB(outputDatabaseName);
+        flightTrack = db.getCollection(outputCollectionName);
         // flightTrack.drop();
     }
 
@@ -117,6 +121,10 @@ public class GeoTrackGenerator implements Runnable {
                     geoTrack.put("fromIata", flightDetails.getFromIata());
                     geoTrack.put("toIata", flightDetails.getToIata());
                     geoTrack.put("aircraft", flightDetails.getAircraft());
+                    String airline = flightDetails.getAirline();
+                    if (airline != null) {
+                        geoTrack.put("airline", airline);
+                    }
                     BasicDBList latLong = new BasicDBList();
                     latLong.add(track.getLat());
                     latLong.add(track.getLon());
@@ -163,5 +171,21 @@ public class GeoTrackGenerator implements Runnable {
 
     public void setMongoClient(MongoClient mongoClient) {
         this.mongoClient = mongoClient;
+    }
+
+    public String getOutputDatabaseName() {
+        return outputDatabaseName;
+    }
+
+    public void setOutputDatabaseName(String outputDatabaseName) {
+        this.outputDatabaseName = outputDatabaseName;
+    }
+
+    public String getOutputCollectionName() {
+        return outputCollectionName;
+    }
+
+    public void setOutputCollectionName(String outputCollectionName) {
+        this.outputCollectionName = outputCollectionName;
     }
 }

@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +33,9 @@ import com.mongodb.Bytes;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.replication.domain.ReplicationSource;
+import com.mongodb.util.JSON;
 import com.wordnik.util.PrintFormat;
 
 public class OplogTailThread extends Thread {
@@ -42,18 +46,23 @@ public class OplogTailThread extends Thread {
     protected boolean running = false;
     protected boolean killMe = false;
     protected long reportInterval = 1000;
-    protected List<String> inclusions;
-    protected List<String> exclusions;
+    protected List<String> inclusions = new ArrayList<String>();
+    protected List<String> exclusions = new ArrayList<String>();
     protected List<OplogEventListener> processors = new ArrayList<OplogEventListener>();
     protected DBCollection oplog;
     protected String OPLOG_LAST_FILENAME = "last_timestamp.txt";
     
     BSONTimestamp lastTimestamp = null;
-
-    public OplogTailThread(OplogEventListener processor, DBCollection oplog) {
-        this.oplog = oplog;
-        this.processors.add(processor);
-        setName("oplog");
+    
+    private String baseQueryJson;
+    private DBObject baseQuery;
+    
+    private MongoClient mongoClient;
+    
+    public OplogTailThread(ReplicationSource replicationSource) throws UnknownHostException {
+        MongoClient mongoClient = new MongoClient(replicationSource.getHostname(), replicationSource.getPort());
+        this.setBaseQueryJson(replicationSource.getOplogBaseQuery());
+        oplog = mongoClient.getDB("local").getCollection("oplog.rs");
     }
 
     public void setOutputEnabled(boolean enabled) {
@@ -134,6 +143,27 @@ public class OplogTailThread extends Thread {
         }
         return null;
     }
+    
+    private DBCursor getCursor() {
+        DBCursor cursor = null;
+        DBObject query = null;
+        if (baseQuery == null) {
+            query = new BasicDBObject();
+        } else {
+            query = baseQuery;
+        }
+        
+        if (lastTimestamp != null) {
+            query.put("ts", new BasicDBObject("$gt", lastTimestamp));
+            cursor = oplog.find(query);
+            cursor.addOption(Bytes.QUERYOPTION_OPLOGREPLAY);
+        } else {
+            cursor = oplog.find(query);
+        }
+        cursor.addOption(Bytes.QUERYOPTION_TAILABLE);
+        cursor.addOption(Bytes.QUERYOPTION_AWAITDATA);
+        return cursor;
+    }
 
     @Override
     public void run() {
@@ -156,16 +186,7 @@ public class OplogTailThread extends Thread {
                         logger.debug("Exiting loop");
                         break;
                     }
-                    DBCursor cursor = null;
-                    if (lastTimestamp != null) {
-                        cursor = oplog.find(new BasicDBObject("ts", new BasicDBObject("$gt", lastTimestamp)));
-                        cursor.addOption(Bytes.QUERYOPTION_OPLOGREPLAY);
-                    } else {
-                        cursor = oplog.find();
-                    }
-                    cursor.addOption(Bytes.QUERYOPTION_TAILABLE);
-                    cursor.addOption(Bytes.QUERYOPTION_AWAITDATA);
-                    
+                    DBCursor cursor = getCursor();
 
                     while (!killMe && cursor.hasNext()) {
                         DBObject x = cursor.next();
@@ -268,6 +289,15 @@ public class OplogTailThread extends Thread {
             System.out.println(collectionName + ": " + PrintFormat.LONG_FORMAT.format(count) + " records, "
                     + PrintFormat.LONG_FORMAT.format(brate) + " req/sec, " + PrintFormat.LONG_FORMAT.format(skips)
                     + " skips");
+    }
+
+    public String getBaseQueryJson() {
+        return baseQueryJson;
+    }
+
+    public void setBaseQueryJson(String baseQueryJson) {
+        this.baseQueryJson = baseQueryJson;
+        this.baseQuery = (DBObject)JSON.parse(baseQueryJson);
     }
 
 

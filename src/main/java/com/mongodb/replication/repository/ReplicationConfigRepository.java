@@ -3,9 +3,9 @@ package com.mongodb.replication.repository;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.mongodb.replication.domain.ReplicationSource;
+import com.mongodb.replication.domain.ReplicationConfig;
 
 @Repository
-public interface ReplicationSourceRepository extends CrudRepository<ReplicationSource, String> {
+public interface ReplicationConfigRepository extends CrudRepository<ReplicationConfig, String> {
     
 }

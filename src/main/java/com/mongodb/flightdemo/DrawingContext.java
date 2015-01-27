@@ -27,7 +27,8 @@ class DrawingContext {
     // saucer's current position
     private ReferencedEnvelope spriteEnv;
     
-    private final static Image GREEN_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane.png")).getImage();
+    private final static Image GREEN_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-green.png")).getImage();
+    private final static Image BLUE_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-blue.png")).getImage();
     
     private Image image;
 
@@ -37,6 +38,12 @@ class DrawingContext {
 
     public DrawingContext(FlightInfo flightInfo) {
         this.flightInfo = flightInfo;
+        if (flightInfo.getAirline() != null) {
+            this.image = GREEN_PLANE;
+        } else {
+            this.image = BLUE_PLANE;
+        }
+        
     }
 
     @Override

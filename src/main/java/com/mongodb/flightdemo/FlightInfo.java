@@ -5,6 +5,7 @@ public class FlightInfo {
     private String flightNum;
     private double lat;
     private double lon;
+    private String airline;
     
     public FlightInfo(String flightNum, double lat, double lon) {
         super();
@@ -65,6 +66,14 @@ public class FlightInfo {
     @Override
     public String toString() {
         return "FlightInfo [flightNum=" + flightNum + ", lat=" + lat + ", lon=" + lon + "]";
+    }
+
+    public String getAirline() {
+        return airline;
+    }
+
+    public void setAirline(String airline) {
+        this.airline = airline;
     }
 
 }
