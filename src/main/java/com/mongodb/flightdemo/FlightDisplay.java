@@ -11,6 +11,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.IOException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +22,14 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
@@ -61,7 +70,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
     private CoordinateReferenceSystem crs;
 
-
+    private String region;
 
     public FlightDisplay() throws IOException {
 
@@ -147,10 +156,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         return icon;
     }
     
-    private void buildGui() {
-        JFrame frame = new JFrame("MongoDB Replication Demo");
-        frame.getContentPane().add(this);
-        
+    private void initGeneratorMenu(JFrame frame) {
         JMenuBar menuBar = new JMenuBar();
         JMenu dataMenu = new JMenu("Data");
         final JMenuItem startGenerator = new JMenuItem("Start Generator");
@@ -174,13 +180,64 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         stopGenerator.setEnabled(false);
         dataMenu.add(stopGenerator);
         menuBar.add(dataMenu);
+        frame.setJMenuBar(menuBar);
+    }
+    
+    private void buildGui() {
+        JFrame frame = new JFrame("MongoDB Replication Demo");
+        frame.getContentPane().add(this);
+        
+        
+        if (region != null) {
+            initGeneratorMenu(frame);
+            geoTrackGenerator.setRegion(region);
+        }
+        
 
         // frame.setSize(640, 480);
         frame.setSize(2048, 1024);
-        frame.setJMenuBar(menuBar);
+        
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+    }
+    
+    @SuppressWarnings("static-access")
+    void initializeAndParseCommandLineOptions(String[] args) {
+        Options options = new Options();
+        options.addOption(new Option( "help", "print this message" ));
+        options.addOption(OptionBuilder.withArgName("region")
+                .hasArg()
+                .withDescription(  "Optional geographic region name (e.g. east or west)" )
+                .create( "r" ));
+        
+
+        CommandLineParser parser = new GnuParser();
+        CommandLine line = null;
+        try {
+            line = parser.parse(options, args);
+            if (line.hasOption("help")) {
+                printHelpAndExit(options); 
+            }
+            initOptions(line);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            printHelpAndExit(options);
+        } catch (Exception e) {
+            e.printStackTrace();
+            printHelpAndExit(options);
+        }
+    }
+    
+    private void initOptions(CommandLine line) throws UnknownHostException {
+        String region = line.getOptionValue("r");
+        this.region = region;
+    }
+
+    private static void printHelpAndExit(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("flightDisplay", options);
+        System.exit(-1);
     }
 
     // Main application method
@@ -197,7 +254,9 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         }
         
         FlightDisplay flightMap = context.getBean(FlightDisplay.class);
+        flightMap.initializeAndParseCommandLineOptions(args);
         flightMap.buildGui();
+        // dirty hack to avoid NPEs presumably due to underlying async initialization of map components
         Thread.sleep(3000);
         flightMap.init();
     }

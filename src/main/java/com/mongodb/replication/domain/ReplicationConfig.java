@@ -47,6 +47,16 @@ public class ReplicationConfig {
     public void setId(Long id) {
         this.id = id;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ReplicationConfig: sources=");
+        sb.append(replicationSources);
+        sb.append(", target=");
+        sb.append(replicationTarget);
+        return sb.toString();
+    }
     
     
 

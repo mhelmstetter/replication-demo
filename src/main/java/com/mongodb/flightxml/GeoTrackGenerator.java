@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ResourceLoader;
 
@@ -56,6 +55,8 @@ public class GeoTrackGenerator implements Runnable {
     private boolean requestStop = false;
     
     private int maxFlights = 100;
+    
+    private String region;
 
     @PostConstruct
     private void init() {
@@ -125,6 +126,9 @@ public class GeoTrackGenerator implements Runnable {
                     if (airline != null) {
                         geoTrack.put("airline", airline);
                     }
+                    if (region != null) {
+                        geoTrack.put("region", region);
+                    }
                     BasicDBList latLong = new BasicDBList();
                     latLong.add(track.getLat());
                     latLong.add(track.getLon());
@@ -187,5 +191,13 @@ public class GeoTrackGenerator implements Runnable {
 
     public void setOutputCollectionName(String outputCollectionName) {
         this.outputCollectionName = outputCollectionName;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 }

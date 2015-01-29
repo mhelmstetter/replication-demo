@@ -117,7 +117,6 @@ public class Flight24Scraper {
             
             
             if (! flight.equals("") && status.equals("landed")) {
-                //System.out.println(flightDetails);
                 logger.debug(flight + " status: " + status + " " + tailNum);
                 DBObject dbo = (DBObject)JSON.parse(flightDetails.toString());
                 dbo.put("_id", id);

@@ -33,7 +33,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import com.mongodb.BasicDBObject;
 import com.mongodb.gui.DataTableModel;
 import com.mongodb.gui.util.EclipseIcons;
-import com.mongodb.oplog.MongoConnectionDialog;
 import com.mongodb.replication.domain.ReplicationSource;
 import com.mongodb.replication.domain.ReplicationSourceStatus;
 import com.mongodb.replication.repository.ReplicationConfigRepository;

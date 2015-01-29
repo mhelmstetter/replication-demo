@@ -7,16 +7,23 @@ import java.util.Map;
 
 import org.bson.BasicBSONObject;
 import org.bson.types.BSONTimestamp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
 import com.mongodb.replication.domain.CollectionMapping;
 import com.mongodb.replication.domain.DatabaseMapping;
 import com.mongodb.replication.domain.ReplicationTarget;
 
 public class OplogReplayWriter implements OplogEventListener {
+    
+    protected static final Logger logger = LoggerFactory.getLogger(OplogReplayWriter.class);
+    
 	protected static Map<String, String> COLLECTION_MAPPING = new HashMap<String, String>();
 	protected static Map<String, String> DATABASE_MAPPING = new HashMap<String, String>();
 	protected static Map<String, String> NAMESPACE_COLLECTION_MAP = new HashMap<String, String>();
@@ -111,11 +118,12 @@ public class OplogReplayWriter implements OplogEventListener {
 					db.command(operation);
 				}
 			}
+			catch (MongoException.DuplicateKey dke) {
+			    logger.warn("Duplicate key: " + Thread.currentThread().getName() + dke.getMessage());
+			}
 			catch (Exception e) {
-				//System.out.println("failed to process record " + operation.toString() + " " + e.getMessage());
 			    BSONTimestamp ts = (BSONTimestamp) dbo.get("ts");
-			    
-				System.out.println(Integer.toString(ts.getTime()) + "|" + Integer.toString(ts.getInc()));
+			    logger.error("Error processing record", e);
 			}
 		}
 	}

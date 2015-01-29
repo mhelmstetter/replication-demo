@@ -21,7 +21,17 @@
 		</property>
 		<property name="outputDatabaseName" value="region" />
 		<property name="outputCollectionName" value="flightTrack" />
-
+	</bean>
+	
+	<bean id="replicationManager" class="com.mongodb.replication.ReplicationManager">
+	
+	</bean>
+	
+	<bean id="oplogTailThread" class="com.mongodb.oplog.OplogTailThread" scope="prototype">
+		<property name="timestampPersister">
+			<bean class="com.mongodb.oplog.FileTimestampPersister"></bean>
+		</property>
+	
 	</bean>
 
 

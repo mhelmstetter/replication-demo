@@ -12,14 +12,6 @@
 
 package com.mongodb.oplog;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +26,15 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.replication.domain.ReplicationConfig;
 import com.mongodb.replication.domain.ReplicationSource;
 import com.mongodb.util.JSON;
 import com.wordnik.util.PrintFormat;
 
 public class OplogTailThread extends Thread {
-    
+
     protected static final Logger logger = LoggerFactory.getLogger(OplogTailThread.class);
-    
+
     protected boolean enableOutput = true;
     protected boolean running = false;
     protected boolean killMe = false;
@@ -50,43 +43,35 @@ public class OplogTailThread extends Thread {
     protected List<String> exclusions = new ArrayList<String>();
     protected List<OplogEventListener> processors = new ArrayList<OplogEventListener>();
     protected DBCollection oplog;
-    protected String OPLOG_LAST_FILENAME = "last_timestamp.txt";
-    
-    BSONTimestamp lastTimestamp = null;
-    
+
+    private BSONTimestamp lastTimestamp = null;
+
+    private TimestampPersister timestampPersister;
+
     private String baseQueryJson;
     private DBObject baseQuery;
-    
+
     private MongoClient mongoClient;
-    
-    public OplogTailThread(ReplicationSource replicationSource) throws UnknownHostException {
-        MongoClient mongoClient = new MongoClient(replicationSource.getHostname(), replicationSource.getPort());
+
+    public void setReplicationSource(ReplicationSource replicationSource, ReplicationConfig parentConfig)
+            throws UnknownHostException {
+        mongoClient = new MongoClient(replicationSource.getHostname(), replicationSource.getPort());
         this.setBaseQueryJson(replicationSource.getOplogBaseQuery());
         oplog = mongoClient.getDB("local").getCollection("oplog.rs");
+        String id = String.format("%s%s-%s%s", replicationSource.getHostname(), replicationSource.getPort(), parentConfig
+                .getReplicationTarget().getHostname(), parentConfig.getReplicationTarget().getPort());
+        timestampPersister.setId(id);
+        this.setName(id);
+
+        // TODO verify that the replicationSource is a replSet?
     }
 
     public void setOutputEnabled(boolean enabled) {
         this.enableOutput = enabled;
     }
 
-    public void setStopFilename(String filename) {
-        this.OPLOG_LAST_FILENAME = filename;
-    }
-
     public void addOplogProcessor(OplogEventListener processor) {
         this.processors.add(processor);
-    }
-
-    public void setBaseDir(String dir) {
-        if (dir != null) {
-            OPLOG_LAST_FILENAME = dir + File.separator + OPLOG_LAST_FILENAME;
-        }
-    }
-
-    public void setBaseDir(String dir, String fileName) {
-        if (dir != null && fileName != null) {
-            OPLOG_LAST_FILENAME = dir + File.separator + fileName;
-        }
     }
 
     public void setInclusions(List<String> inclusions) {
@@ -97,53 +82,6 @@ public class OplogTailThread extends Thread {
         this.exclusions = exclusions;
     }
 
-    public void writeLastTimestamp() {
-        if (lastTimestamp == null) {
-            return;
-        }
-        Writer writer = null;
-        try {
-            OutputStream out = new FileOutputStream(new File(OPLOG_LAST_FILENAME));
-            writer = new OutputStreamWriter(out, "UTF-8");
-            String tsString = Integer.toString(lastTimestamp.getTime()) + "|" + Integer.toString(lastTimestamp.getInc());
-            logger.debug("writeLastTimestamp() " + tsString);
-            writer.write(tsString);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (Exception e) {
-                }
-            }
-        }
-    }
-
-    public BSONTimestamp getLastTimestamp() {
-        BufferedReader input = null;
-        try {
-            File file = new File(OPLOG_LAST_FILENAME);
-            if (!file.exists()) {
-                return null;
-            }
-            input = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF8"));
-            String line = input.readLine();
-            String[] parts = line.split("\\|");
-            return new BSONTimestamp(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (Exception e) {
-                }
-            }
-        }
-        return null;
-    }
-    
     private DBCursor getCursor() {
         DBCursor cursor = null;
         DBObject query = null;
@@ -152,7 +90,7 @@ public class OplogTailThread extends Thread {
         } else {
             query = baseQuery;
         }
-        
+
         if (lastTimestamp != null) {
             query.put("ts", new BasicDBObject("$gt", lastTimestamp));
             cursor = oplog.find(query);
@@ -168,12 +106,14 @@ public class OplogTailThread extends Thread {
     @Override
     public void run() {
         running = true;
-        
+
         try {
-            lastTimestamp = getLastTimestamp();
-            
-            logger.debug("lastTimestamp: " + Integer.toString(lastTimestamp.getTime()) + "|" + Integer.toString(lastTimestamp.getInc()));
-            
+            lastTimestamp = timestampPersister.getLastTimestamp();
+
+            if (lastTimestamp != null) {
+                logger.debug("lastTimestamp: " + Integer.toString(lastTimestamp.getTime()) + "|"
+                        + Integer.toString(lastTimestamp.getInc()));
+            }
 
             long lastWrite = 0;
             long count = 0;
@@ -190,7 +130,7 @@ public class OplogTailThread extends Thread {
 
                     while (!killMe && cursor.hasNext()) {
                         DBObject x = cursor.next();
-                        
+
                         if (!killMe) {
                             lastTimestamp = (BSONTimestamp) x.get("ts");
                             if (shouldWrite(x)) {
@@ -201,33 +141,34 @@ public class OplogTailThread extends Thread {
                                 skips++;
                             }
                             if (System.currentTimeMillis() - lastWrite > 1000) {
-                                writeLastTimestamp();
+                                timestampPersister.writeLastTimestamp(lastTimestamp);
                                 lastWrite = System.currentTimeMillis();
                             }
-                            
+
                             long duration = System.currentTimeMillis() - lastOutput;
                             if (duration > reportInterval) {
-                                report(this.getName(), count, skips, System.currentTimeMillis() - startTime, lastTimestamp.getTime());
+                                report(this.getName(), count, skips, System.currentTimeMillis() - startTime,
+                                        lastTimestamp.getTime());
                                 lastOutput = System.currentTimeMillis();
                             }
                         }
                     }
                 } catch (com.mongodb.MongoException.CursorNotFound ex) {
-                    writeLastTimestamp();
+                    timestampPersister.writeLastTimestamp(lastTimestamp);
                     System.out.println("Cursor not found, waiting");
                     Thread.sleep(2000);
                 } catch (com.mongodb.MongoInternalException ex) {
                     logger.warn("Cursor not found, waiting");
-                    //System.out.println();
-                    writeLastTimestamp();
-                    //ex.printStackTrace();
+                    // System.out.println();
+                    timestampPersister.writeLastTimestamp(lastTimestamp);
+                    // ex.printStackTrace();
                 } catch (com.mongodb.MongoException ex) {
-                    writeLastTimestamp();
+                    timestampPersister.writeLastTimestamp(lastTimestamp);
                     System.out.println("Internal exception, waiting");
                     Thread.sleep(2000);
                 } catch (Exception ex) {
                     killMe = true;
-                    writeLastTimestamp();
+                    timestampPersister.writeLastTimestamp(lastTimestamp);
                     ex.printStackTrace();
                     break;
                 }
@@ -236,7 +177,7 @@ public class OplogTailThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            writeLastTimestamp();
+            timestampPersister.writeLastTimestamp(lastTimestamp);
             try {
                 for (OplogRecordProcessor processor : processors) {
                     processor.close("oplog");
@@ -245,16 +186,14 @@ public class OplogTailThread extends Thread {
                 e.printStackTrace();
             }
         }
-        writeLastTimestamp();
+        timestampPersister.writeLastTimestamp(lastTimestamp);
         running = false;
     }
-    
+
     public void requestStop() {
-        writeLastTimestamp();
+        timestampPersister.writeLastTimestamp(lastTimestamp);
         killMe = true;
     }
-    
-    
 
     boolean shouldWrite(DBObject obj) {
         String ns = (String) obj.get("ns");
@@ -283,10 +222,10 @@ public class OplogTailThread extends Thread {
         for (OplogEventListener processor : processors) {
             processor.stats(count, skips, duration, lastTimestamp);
         }
-        
+
         double brate = (double) count / ((duration) / 1000.0);
         if (enableOutput)
-            System.out.println(collectionName + ": " + PrintFormat.LONG_FORMAT.format(count) + " records, "
+            logger.debug(collectionName + ": " + PrintFormat.LONG_FORMAT.format(count) + " records, "
                     + PrintFormat.LONG_FORMAT.format(brate) + " req/sec, " + PrintFormat.LONG_FORMAT.format(skips)
                     + " skips");
     }
@@ -297,8 +236,15 @@ public class OplogTailThread extends Thread {
 
     public void setBaseQueryJson(String baseQueryJson) {
         this.baseQueryJson = baseQueryJson;
-        this.baseQuery = (DBObject)JSON.parse(baseQueryJson);
+        this.baseQuery = (DBObject) JSON.parse(baseQueryJson);
     }
 
+    public TimestampPersister getTimestampPersister() {
+        return timestampPersister;
+    }
+
+    public void setTimestampPersister(TimestampPersister timestampPersister) {
+        this.timestampPersister = timestampPersister;
+    }
 
 }

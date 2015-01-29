@@ -1,4 +1,4 @@
-package com.mongodb.oplog;
+package com.mongodb.replication.gui;
 
 import java.awt.Component;
 import java.awt.GridBagConstraints;
