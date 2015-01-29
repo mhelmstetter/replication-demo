@@ -13,6 +13,8 @@
 package com.mongodb.oplog;
 
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,11 +31,12 @@ import com.mongodb.MongoClient;
 import com.mongodb.replication.domain.ReplicationConfig;
 import com.mongodb.replication.domain.ReplicationSource;
 import com.mongodb.util.JSON;
-import com.wordnik.util.PrintFormat;
 
 public class OplogTailThread extends Thread {
 
     protected static final Logger logger = LoggerFactory.getLogger(OplogTailThread.class);
+    
+    protected static NumberFormat LONG_FORMAT = new DecimalFormat("###,###");
 
     protected boolean enableOutput = true;
     protected boolean running = false;
@@ -225,8 +228,8 @@ public class OplogTailThread extends Thread {
 
         double brate = (double) count / ((duration) / 1000.0);
         if (enableOutput)
-            logger.debug(collectionName + ": " + PrintFormat.LONG_FORMAT.format(count) + " records, "
-                    + PrintFormat.LONG_FORMAT.format(brate) + " req/sec, " + PrintFormat.LONG_FORMAT.format(skips)
+            logger.debug(collectionName + ": " + LONG_FORMAT.format(count) + " records, "
+                    + LONG_FORMAT.format(brate) + " req/sec, " + LONG_FORMAT.format(skips)
                     + " skips");
     }
 
