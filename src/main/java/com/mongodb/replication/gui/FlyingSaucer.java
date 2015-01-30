@@ -185,7 +185,7 @@ public class FlyingSaucer extends JMapPane {
             context.spriteBackground = null;
         }
         
-        //animationTimer.start();
+        animationTimer.start();
     }
 
     // This is the top-level animation method. It erases
@@ -193,7 +193,6 @@ public class FlyingSaucer extends JMapPane {
     // draws it.
     private void drawSprite() {
         
-
         Graphics2D gr2D = (Graphics2D) getGraphics();
         
         for (DrawingContext context : drawingContexts) {
