@@ -63,6 +63,7 @@ public class ReplicationManager {
         List<OplogEventListener> listeners = oplogEventListeners.get(replicationSource);
         if (listeners == null) {
             listeners = new ArrayList<OplogEventListener>();
+            oplogEventListeners.put(replicationSource, listeners);
         }
         listeners.add(listener);
     }
