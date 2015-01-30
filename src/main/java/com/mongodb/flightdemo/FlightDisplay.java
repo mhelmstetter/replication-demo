@@ -290,8 +290,11 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
         flightInfo.setAirline(airline);
-
+        
         final DrawingContext context = drawingContexts.get(flightNum);
+        if (logger.isTraceEnabled()) {
+            logger.trace("processRecord(): " + context);
+        }
         if (context != null) {
             // logger.debug("Moving " + context);
             context.changePosition(flightInfo);
