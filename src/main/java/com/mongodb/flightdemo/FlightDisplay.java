@@ -52,7 +52,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.flightxml.GeoTrackGenerator;
 import com.mongodb.oplog.OplogEventListener;
+import com.mongodb.oplog.OplogTailThread;
 import com.mongodb.replication.ReplicationManager;
+import com.mongodb.replication.domain.ReplicationSource;
 
 
 @Component
@@ -253,16 +255,29 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             // ignore
         }
         
-        FlightDisplay flightMap = context.getBean(FlightDisplay.class);
-        flightMap.initializeAndParseCommandLineOptions(args);
-        flightMap.buildGui();
-        // dirty hack to avoid NPEs presumably due to underlying async initialization of map components
-        Thread.sleep(3000);
-        flightMap.init();
+        try {
+            FlightDisplay flightMap = context.getBean(FlightDisplay.class);
+            flightMap.initializeAndParseCommandLineOptions(args);
+            flightMap.buildGui();
+            // dirty hack to avoid NPEs presumably due to underlying async initialization of map components
+            Thread.sleep(3000);
+            flightMap.init();
+        } catch (Exception e) {
+            logger.error("Startup error", e);
+            System.exit(-1);
+        }
+        logger.debug("Init complete");
+        
     }
 
     private void init() throws IOException {
-        replicationManager.addOplogEventListener(this);
+        //replicationManager.addOplogEventListener(this);
+        
+        ReplicationSource myOplog = new ReplicationSource();
+        myOplog.setHostname("localhost");
+        myOplog.setPort(27017);
+        replicationManager.registerOplogEventListener(this, myOplog);
+        
         replicationManager.start();
     }
 

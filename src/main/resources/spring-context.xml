@@ -16,7 +16,7 @@
 		<property name="mongoClient">
 			<bean id="mongo" class="com.mongodb.MongoClient">
 				<constructor-arg type="java.lang.String" value="localhost" />
-				<constructor-arg type="int" value="37017" />
+				<constructor-arg type="int" value="27017" />
 			</bean>
 		</property>
 		<property name="outputDatabaseName" value="region" />

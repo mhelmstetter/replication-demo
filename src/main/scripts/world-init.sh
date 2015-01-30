@@ -5,6 +5,18 @@ EAST=192.168.1.101
 mongo replicationConfig <<EOF
 db.replicationConfig.save(
   {
+	"_id" : NumberLong(0),
+	"replicationSources" : [
+		{
+			"oplogBaseQuery" : "{ns:'world.flightTrack'}",
+			"hostname" : "localhost",
+			"port" : 27017
+		}
+	]
+  }
+)
+db.replicationConfig.save(
+  {
 	"_id" : NumberLong(1),
 	"replicationSources" : [
 		{

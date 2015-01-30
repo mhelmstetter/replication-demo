@@ -56,13 +56,19 @@ public class OplogTailThread extends Thread {
 
     private MongoClient mongoClient;
 
-    public void setReplicationSource(ReplicationSource replicationSource, ReplicationConfig parentConfig)
+    public void initialize(ReplicationSource replicationSource, ReplicationConfig parentConfig)
             throws UnknownHostException {
         mongoClient = new MongoClient(replicationSource.getHostname(), replicationSource.getPort());
         this.setBaseQueryJson(replicationSource.getOplogBaseQuery());
         oplog = mongoClient.getDB("local").getCollection("oplog.rs");
-        String id = String.format("%s%s-%s%s", replicationSource.getHostname(), replicationSource.getPort(), parentConfig
-                .getReplicationTarget().getHostname(), parentConfig.getReplicationTarget().getPort());
+        String id = null;
+        if (parentConfig != null && parentConfig.getReplicationTarget() != null) {
+            id = String.format(TimestampPersister.SOURCE_TARGET_ID_FORMAT, replicationSource.getHostname(), replicationSource.getPort(), parentConfig
+                    .getReplicationTarget().getHostname(), parentConfig.getReplicationTarget().getPort());
+        } else {
+            id = String.format(TimestampPersister.SOURCE_TARGET_ID_FORMAT, replicationSource.getHostname(), replicationSource.getPort(), "NULL", "NULL");
+        }
+        
         timestampPersister.setId(id);
         this.setName(id);
 
@@ -74,7 +80,9 @@ public class OplogTailThread extends Thread {
     }
 
     public void addOplogProcessor(OplogEventListener processor) {
-        this.processors.add(processor);
+        if (processor != null) {
+            this.processors.add(processor);
+        }
     }
 
     public void setInclusions(List<String> inclusions) {
