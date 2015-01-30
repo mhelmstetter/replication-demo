@@ -82,9 +82,9 @@ public class ReplicationManager {
     //@PostConstruct
     public void start() throws IOException {
         
-        initializeRegionToWorld();
-        initializeWorldToRegion(2L, "east", 37017);
-        initializeWorldToRegion(3L, "west", 47017);
+        //initializeRegionToWorld();
+        //initializeWorldToRegion(2L, "east", 37017);
+        //initializeWorldToRegion(3L, "west", 47017);
 
         Iterator<ReplicationConfig> i = replicationConfigRepository.findAll().iterator();
         while (i.hasNext()) {
