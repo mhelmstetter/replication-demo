@@ -123,7 +123,7 @@ public class FlyingSaucer extends JMapPane {
 //        viewport.setBounds(SMALL_WORLD);
 //        mapContent.setViewport(viewport);
         
-        this.setRenderer(new StreamingRenderer());
+        //this.setRenderer(new StreamingRenderer());
         
         for (int i = 0; i < 1; i++) {
             drawingContexts.add(new DrawingContext());
