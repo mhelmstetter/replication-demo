@@ -30,6 +30,8 @@ Run the script `target/scripts/flightDisplay` to run from a local build, or at `
     
 After the application loads, start the data generator by selecting the top menu *Data -> Start Generator*
 
+Note that this configuration is very simplistic but will provide a basic demonstration of the GUI and tailing and filtering the oplog. It will only start 2 oplog tail threads. One against the "east" replica sets oplog, this is what the GUI will display. The data generator inserts into that replica set (localhost:27017), which gets picked up by the `OplogTailThread` and displayed. There is also an `OplogTailThread` configured against the world replica set (localhost:37017), but there should be no data coming from that oplog with this configuration.
+
 ## Key Classes
 ###GeoTrackGenerator
 Reads flight information from tracks.json and inserts data into the "track" database, "flightTrack" collection on `localhost:27017`.
