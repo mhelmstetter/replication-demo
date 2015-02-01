@@ -76,7 +76,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
     public FlightDisplay() throws IOException {
 
-        URL url = FlightDisplay.class.getResource("/data/shapefiles/countries.shp");
+        URL url = FlightDisplay.class.getResource("/data/shapefiles/ne_110m_admin_0_countries.shp");
         FileDataStore store = FileDataStoreFinder.getDataStore(url);
         FeatureSource featureSource = store.getFeatureSource();
 
