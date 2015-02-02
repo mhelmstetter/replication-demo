@@ -117,7 +117,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             image.setData(getBaseImage().getData(r));
             
             logger.debug("xxxxx");
-            //backBufferGraphics.drawImage(image, 0, 0, null);
+            backBufferGraphics.drawImage(image, 0, 0, null);
 
         } else {
             backBufferGraphics.setBackground(getBackground());
@@ -306,6 +306,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         replicationManager.registerOplogEventListener(this, myOplog);
         
         replicationManager.start();
+        prepareGraphics(false);
     }
     
     @Override

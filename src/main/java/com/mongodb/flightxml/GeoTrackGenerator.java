@@ -69,7 +69,7 @@ public class GeoTrackGenerator implements Runnable {
         BufferedReader reader = null;
         try {
         flightDetailsList = new ArrayList<FlightDetails>();
-        InputStream is = resourceLoader.getResource("classpath:data/tracks.json").getInputStream();
+        InputStream is = resourceLoader.getResource("classpath:data/tracks_west.json").getInputStream();
         reader = new BufferedReader(new InputStreamReader(is));
 
         String currentLine = null;
