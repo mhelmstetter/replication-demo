@@ -112,7 +112,12 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             }
 
             backBufferGraphics = backBuffer.createGraphics();
-            //clearLabelCache.set(true);
+            //clearLabebackBufferGraphics
+            BufferedImage image = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_ARGB);
+            image.setData(getBaseImage().getData(r));
+            
+            logger.debug("xxxxx");
+            //backBufferGraphics.drawImage(image, 0, 0, null);
 
         } else {
             backBufferGraphics.setBackground(getBackground());
@@ -129,10 +134,11 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         prepareGraphics(false);
 
         Rectangle bounds = context.getSpriteScreenPos();
+        //bounds.grow(2, 2);
         Raster background = null;
         if (bounds != null) {
             // TODO this can potentially throw ArrayIndexOutOfBoundsException "Coordinate out of bounds!"
-            background = getBaseImage().getData(context.getSpriteScreenPos());
+            background = getBaseImage().getData(bounds);
         }
 
         context.setSpritePosition(getWorldToScreenTransform(), crs, background);
@@ -311,6 +317,15 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     public void processRecord(BasicDBObject x) throws Exception {
         DBObject obj = (DBObject) x.get("o");
         String flightNum = (String) obj.get("flightNum");
+        if (flightNum == null) {
+        	logger.debug("*****");
+        	SwingUtilities.invokeAndWait(new Runnable() {
+                public void run() {
+                    paint();
+                }
+            });
+        	return;
+        }
         BasicDBList positions = (BasicDBList) obj.get("position");
         String airline = (String)obj.get("airline");
 
@@ -325,22 +340,19 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             // logger.debug("Moving " + context);
             context.changePosition(flightInfo);
             drawSprite(context);
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    paint();
-                }
-            });
+           
+            
 
         } else {
             final DrawingContext newContext = new DrawingContext(flightInfo);
             // logger.debug("New context " + context);
             drawingContexts.put(flightNum, newContext);
             drawSprite(newContext);
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    paint();
-                }
-            });
+//            SwingUtilities.invokeAndWait(new Runnable() {
+//                public void run() {
+//                    paint();
+//                }
+//            });
 
         }
 

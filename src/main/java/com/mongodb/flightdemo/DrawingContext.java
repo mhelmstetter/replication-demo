@@ -30,6 +30,7 @@ class DrawingContext {
     
     private final static Image GREEN_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-green.png")).getImage();
     private final static Image BLUE_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-blue.png")).getImage();
+    private final static Image RED_DOT = new ImageIcon(DrawingContext.class.getResource("/images/dot-red.png")).getImage();
     
     private Image image;
 
@@ -44,6 +45,7 @@ class DrawingContext {
         } else {
             this.image = BLUE_PLANE;
         }
+        //this.image = RED_DOT;
         
     }
 

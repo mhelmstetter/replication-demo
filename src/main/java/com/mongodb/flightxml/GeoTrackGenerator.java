@@ -137,12 +137,13 @@ public class GeoTrackGenerator implements Runnable {
 
                     flightTrack.insert(geoTrack);
                 }
-
+                DBObject dummy = new BasicDBObject();
+                flightTrack.insert(dummy);
+                Thread.sleep(1000);
                 logger.debug("Iteration " + iteration++ + " " + flightDetailsList.size());
                 if (flightDetailsList.size() == 0 || requestStop) {
                     break;
                 }
-                Thread.sleep(500);
             }
         } catch (Exception ie) {
             logger.warn("interrupted");
