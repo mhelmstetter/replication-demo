@@ -36,10 +36,11 @@ import org.geotools.data.FileDataStoreFinder;
 import org.geotools.map.FeatureLayer;
 import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
+import org.geotools.map.event.MapLayerEvent;
+import org.geotools.map.event.MapLayerListEvent;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
-import org.geotools.swing.JMapPane;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.flightxml.GeoTrackGenerator;
 import com.mongodb.oplog.OplogEventListener;
-import com.mongodb.oplog.OplogTailThread;
 import com.mongodb.replication.ReplicationManager;
 import com.mongodb.replication.domain.ReplicationSource;
 
@@ -99,7 +99,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     // draws it.
     private void drawSprite(DrawingContext context) {
 
-        Graphics2D gr2D = (Graphics2D) getGraphics();
+        //Graphics2D gr2D = (Graphics2D) getGraphics();
 
         Rectangle bounds = context.getSpriteScreenPos();
         Raster background = null;
@@ -110,10 +110,11 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         context.setSpritePosition(getWorldToScreenTransform(), crs, background);
         // context.setSpriteBackground();
-        eraseSprite(gr2D, context);
+        eraseSprite(baseImageGraphics, context);
 
         // moveSprite(context);
-        context.paintSprite(gr2D);
+        context.paintSprite(baseImageGraphics);
+        repaint();
         // logger.debug("draw finished =======================");
 
     }
