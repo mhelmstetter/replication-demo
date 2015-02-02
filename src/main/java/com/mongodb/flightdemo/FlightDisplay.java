@@ -1,9 +1,12 @@
 package com.mongodb.flightdemo;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.Transparency;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
@@ -36,11 +39,11 @@ import org.geotools.data.FileDataStoreFinder;
 import org.geotools.map.FeatureLayer;
 import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
-import org.geotools.map.event.MapLayerEvent;
-import org.geotools.map.event.MapLayerListEvent;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
+import org.geotools.swing.JMapPane;
+import org.geotools.swing.RenderingExecutorEvent;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +56,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.flightxml.GeoTrackGenerator;
 import com.mongodb.oplog.OplogEventListener;
+import com.mongodb.oplog.OplogTailThread;
 import com.mongodb.replication.ReplicationManager;
 import com.mongodb.replication.domain.ReplicationSource;
 
@@ -73,6 +77,9 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     private CoordinateReferenceSystem crs;
 
     private String region;
+    
+    private BufferedImage backBuffer;
+    private Graphics2D backBufferGraphics;
 
     public FlightDisplay() throws IOException {
 
@@ -92,6 +99,26 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         crs = map.getMaxBounds().getCoordinateReferenceSystem();
         this.setRenderer(new StreamingRenderer());
     }
+    
+    private void prepareGraphics(boolean createNewImage) {
+        Rectangle r = getVisibleRect();
+        if (backBuffer == null || createNewImage) {
+            backBuffer = GraphicsEnvironment.getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice().getDefaultConfiguration().
+                    createCompatibleImage(r.width, r.height, Transparency.TRANSLUCENT);
+
+            if (backBufferGraphics != null) {
+                backBufferGraphics.dispose();
+            }
+
+            backBufferGraphics = backBuffer.createGraphics();
+            //clearLabelCache.set(true);
+
+        } else {
+            backBufferGraphics.setBackground(getBackground());
+            //backBufferGraphics.clearRect(0, 0, r.width, r.height);
+        }
+    }
 
 
     // This is the top-level animation method. It erases
@@ -99,7 +126,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     // draws it.
     private void drawSprite(DrawingContext context) {
 
-        //Graphics2D gr2D = (Graphics2D) getGraphics();
+        prepareGraphics(false);
 
         Rectangle bounds = context.getSpriteScreenPos();
         Raster background = null;
@@ -110,37 +137,30 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         context.setSpritePosition(getWorldToScreenTransform(), crs, background);
         // context.setSpriteBackground();
-        eraseSprite(baseImageGraphics, context);
+        context.eraseSprite(backBufferGraphics);
 
         // moveSprite(context);
-        context.paintSprite(baseImageGraphics);
-        repaint();
+        context.paintSprite(backBufferGraphics);
         // logger.debug("draw finished =======================");
 
     }
 
-    // Erase the sprite by replacing the background map section that
-    // was cached when the sprite was last drawn.
-    private void eraseSprite(Graphics2D gr2D, DrawingContext context) {
-        if (context.getSpriteBackground() != null) {
-
-            Rectangle rect = context.getSpriteBackground().getBounds();
-            //logger.debug("erase() " + rect);
-            BufferedImage image = new BufferedImage(rect.width, rect.height, BufferedImage.TYPE_INT_ARGB);
-
-            Raster child = context.getSpriteBackground().createChild(rect.x, rect.y, rect.width, rect.height, 0, 0,
-                    null);
-
-            image.setData(child);
-
-            gr2D.setBackground(getBackground());
-            gr2D.clearRect(rect.x, rect.y, rect.width, rect.height);
-            gr2D.drawImage(image, rect.x, rect.y, null);
-            // context.setSpriteBackground(null);
-        } else {
-            //logger.debug(context + " eraseSprite() null background");
+    protected void paint() {
+        Graphics2D g2 = (Graphics2D) getGraphics();
+        if (drawingLock.tryLock()) {
+            try {
+                if (backBuffer != null) {
+                    System.out.println("****");
+                    g2.drawImage(backBuffer, imageOrigin.x, imageOrigin.y, null);
+                } else {
+                    System.out.println("null");
+                }
+            } finally {
+                drawingLock.unlock();
+            }
         }
     }
+
 
 
     private Image rotateIcon(Image icon, int angle) {
@@ -281,6 +301,11 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         
         replicationManager.start();
     }
+    
+    @Override
+    public void onRenderingCompleted(RenderingExecutorEvent event) {
+        logger.debug("onRenderingCompleted");
+    }
 
     @Override
     public void processRecord(BasicDBObject x) throws Exception {
@@ -299,9 +324,10 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         if (context != null) {
             // logger.debug("Moving " + context);
             context.changePosition(flightInfo);
+            drawSprite(context);
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    drawSprite(context);
+                    paint();
                 }
             });
 
@@ -309,9 +335,10 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             final DrawingContext newContext = new DrawingContext(flightInfo);
             // logger.debug("New context " + context);
             drawingContexts.put(flightNum, newContext);
+            drawSprite(newContext);
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    drawSprite(newContext);
+                    paint();
                 }
             });
 

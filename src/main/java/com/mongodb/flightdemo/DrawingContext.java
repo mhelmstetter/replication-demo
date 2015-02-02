@@ -6,6 +6,7 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 
 import javax.swing.ImageIcon;
@@ -119,6 +120,29 @@ class DrawingContext {
         Rectangle bounds = getSpriteScreenPos();
         //context.setSpriteBackground(getBaseImage().getData(bounds));
         gr2D.drawImage(image, bounds.x, bounds.y, null);
+    }
+    
+    // Erase the sprite by replacing the background map section that
+    // was cached when the sprite was last drawn.
+    public void eraseSprite(Graphics2D gr2D) {
+        if (getSpriteBackground() != null) {
+
+            Rectangle rect = getSpriteBackground().getBounds();
+            //logger.debug("erase() " + rect);
+            BufferedImage image = new BufferedImage(rect.width, rect.height, BufferedImage.TYPE_INT_ARGB);
+
+            Raster child = getSpriteBackground().createChild(rect.x, rect.y, rect.width, rect.height, 0, 0,
+                    null);
+
+            image.setData(child);
+
+            //gr2D.setBackground(getBackground());
+            gr2D.clearRect(rect.x, rect.y, rect.width, rect.height);
+            gr2D.drawImage(image, rect.x, rect.y, null);
+            // context.setSpriteBackground(null);
+        } else {
+            //logger.debug(context + " eraseSprite() null background");
+        }
     }
 
     public void setSpritePosition(AffineTransform xx, CoordinateReferenceSystem crs, Raster spriteBackground) {

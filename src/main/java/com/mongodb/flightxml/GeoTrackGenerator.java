@@ -54,7 +54,7 @@ public class GeoTrackGenerator implements Runnable {
 
     private boolean requestStop = false;
     
-    private int maxFlights = 100;
+    private int maxFlights = 50;
     
     private String region;
 
@@ -69,7 +69,7 @@ public class GeoTrackGenerator implements Runnable {
         BufferedReader reader = null;
         try {
         flightDetailsList = new ArrayList<FlightDetails>();
-        InputStream is = resourceLoader.getResource("classpath:data/tracks_west.json").getInputStream();
+        InputStream is = resourceLoader.getResource("classpath:data/tracks.json").getInputStream();
         reader = new BufferedReader(new InputStreamReader(is));
 
         String currentLine = null;
