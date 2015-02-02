@@ -40,12 +40,12 @@ class DrawingContext {
 
     public DrawingContext(FlightInfo flightInfo) {
         this.flightInfo = flightInfo;
-//        if (flightInfo.getAirline() != null) {
-//            this.image = GREEN_PLANE;
-//        } else {
-//            this.image = BLUE_PLANE;
-//        }
-        this.image = RED_DOT;
+        if (flightInfo.getAirline() != null) {
+            this.image = GREEN_PLANE;
+        } else {
+            this.image = BLUE_PLANE;
+        }
+        //this.image = RED_DOT;
         
     }
 
@@ -110,10 +110,6 @@ class DrawingContext {
     public void setYdir(int ydir) {
         this.ydir = ydir;
     }
-
-    public ReferencedEnvelope getSpriteEnv() {
-        return spriteEnv;
-    }
     
     // Paint the sprite: before displaying the sprite image we
     // cache that part of the background map image that will be
@@ -155,30 +151,9 @@ class DrawingContext {
 
         // logger.debug(flightInfo + " " + newPositionInScreenCoordinates);
         Rectangle2D newRectScreen = new Rectangle2D.Double(newPositionInScreenCoordinates.getX(),
-                newPositionInScreenCoordinates.getY(), 16, 16);
-
-        //CoordinateReferenceSystem crs = getMapContent().getMaxBounds().getCoordinateReferenceSystem();
-        ReferencedEnvelope bbox = new ReferencedEnvelope(flightInfo.getLon(), flightInfo.getLon() + 3,
-                flightInfo.getLat(), flightInfo.getLat() + 3, crs);
-        // logger.debug("bbox: " + bbox);
-
-        // Rectangle bounds = getSpriteScreenPos(bbox);
-        setSpriteEnv(bbox, xx);
-
-    }
-
-    private void setSpriteEnv(ReferencedEnvelope spriteEnv, AffineTransform tr) {
-        this.spriteEnv = spriteEnv;
-
-        Point2D lowerCorner = new Point2D.Double(spriteEnv.getMinX(), spriteEnv.getMinY());
-        Point2D upperCorner = new Point2D.Double(spriteEnv.getMaxX(), spriteEnv.getMaxY());
-
-        Point2D p0 = tr.transform(lowerCorner, null);
-        Point2D p1 = tr.transform(upperCorner, null);
-
-        Rectangle r = new Rectangle();
-        r.setFrameFromDiagonal(p0, p1);
-        this.screenPosition = r;
+                newPositionInScreenCoordinates.getY(), image.getWidth(null), image.getHeight(null));
+        
+        this.screenPosition = newRectScreen.getBounds();
     }
 
     public Rectangle getSpriteScreenPos() {
