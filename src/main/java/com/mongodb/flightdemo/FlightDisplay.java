@@ -318,14 +318,18 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     public void processRecord(BasicDBObject x) throws Exception {
         DBObject obj = (DBObject) x.get("o");
         String flightNum = (String) obj.get("flightNum");
-        if (flightNum == null) {
+        final DrawingContext context = drawingContexts.get(flightNum);
+        if (flightNum == null || context == null) {
         	logger.debug("*****");
         	SwingUtilities.invokeAndWait(new Runnable() {
                 public void run() {
                     paint();
                 }
             });
-        	return;
+        	if (flightNum == null) {
+        	    return;
+        	}
+        	
         }
         BasicDBList positions = (BasicDBList) obj.get("position");
         String airline = (String)obj.get("airline");
@@ -333,7 +337,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
         flightInfo.setAirline(airline);
         
-        final DrawingContext context = drawingContexts.get(flightNum);
+        
         if (logger.isTraceEnabled()) {
             logger.trace("processRecord(): " + context);
         }

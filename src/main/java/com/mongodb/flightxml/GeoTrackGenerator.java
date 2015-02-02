@@ -54,7 +54,7 @@ public class GeoTrackGenerator implements Runnable {
 
     private boolean requestStop = false;
     
-    private int maxFlights = 50;
+    private int maxFlights = 100;
     
     private String region;
 

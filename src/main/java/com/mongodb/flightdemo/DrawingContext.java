@@ -40,12 +40,12 @@ class DrawingContext {
 
     public DrawingContext(FlightInfo flightInfo) {
         this.flightInfo = flightInfo;
-        if (flightInfo.getAirline() != null) {
-            this.image = GREEN_PLANE;
-        } else {
-            this.image = BLUE_PLANE;
-        }
-        //this.image = RED_DOT;
+//        if (flightInfo.getAirline() != null) {
+//            this.image = GREEN_PLANE;
+//        } else {
+//            this.image = BLUE_PLANE;
+//        }
+        this.image = RED_DOT;
         
     }
 
