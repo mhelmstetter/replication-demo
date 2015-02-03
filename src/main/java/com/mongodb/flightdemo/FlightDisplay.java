@@ -50,228 +50,234 @@ import com.mongodb.oplog.OplogEventListener;
 import com.mongodb.replication.ReplicationManager;
 import com.mongodb.replication.domain.ReplicationSource;
 
-
 @Component
 public class FlightDisplay extends JMapPane implements OplogEventListener {
 
-    @Autowired
-    private ReplicationManager replicationManager;
-    
-    @Autowired
-    private GeoTrackGenerator geoTrackGenerator;
+	@Autowired
+	private ReplicationManager replicationManager;
 
-    protected static final Logger logger = LoggerFactory.getLogger(FlightDisplay.class);
+	@Autowired
+	private GeoTrackGenerator geoTrackGenerator;
 
-    private Map<String, DrawingContext> drawingContexts = new HashMap<String, DrawingContext>();
+	protected static final Logger logger = LoggerFactory
+			.getLogger(FlightDisplay.class);
 
-    private CoordinateReferenceSystem crs;
+	private Map<String, DrawingContext> drawingContexts = new HashMap<String, DrawingContext>();
 
-    private String region;
-    
-    private BufferedImage backBuffer;
-    private Graphics2D backBufferGraphics;
+	private CoordinateReferenceSystem crs;
 
-    public FlightDisplay() throws IOException {
+	private String region;
 
-        URL url = FlightDisplay.class.getResource("/data/shapefiles/ne_110m_admin_0_countries.shp");
-        FileDataStore store = FileDataStoreFinder.getDataStore(url);
-        FeatureSource featureSource = store.getFeatureSource();
+	private BufferedImage backBuffer;
+	private Graphics2D backBufferGraphics;
 
-        MapContent map = new MapContent();
-        // MapContent map = new DefaultMapContext(DefaultGeographicCRS.WGS84);
-        Style style = SLD.createPolygonStyle(Color.DARK_GRAY, null, 1.0F);
-        Layer layer = new FeatureLayer(featureSource, style);
-        this.setBackground(Color.BLACK);
+	public FlightDisplay() throws IOException {
 
-        map.addLayer(layer);
+		URL url = FlightDisplay.class
+				.getResource("/data/shapefiles/ne_110m_admin_0_countries.shp");
+		FileDataStore store = FileDataStoreFinder.getDataStore(url);
+		FeatureSource featureSource = store.getFeatureSource();
 
-        this.setMapContent(map);
-        crs = map.getMaxBounds().getCoordinateReferenceSystem();
-        this.setRenderer(new StreamingRenderer());
-    }
+		MapContent map = new MapContent();
+		// MapContent map = new DefaultMapContext(DefaultGeographicCRS.WGS84);
+		Style style = SLD.createPolygonStyle(Color.DARK_GRAY, null, 1.0F);
+		Layer layer = new FeatureLayer(featureSource, style);
+		this.setBackground(Color.BLACK);
 
-    // sets the location of the sprite component
-    private void drawSprite(DrawingContext context) {
-        context.setSpritePosition(getWorldToScreenTransform());
-    }
+		map.addLayer(layer);
 
-    private void initGeneratorMenu(JFrame frame) {
-        JMenuBar menuBar = new JMenuBar();
-        JMenu dataMenu = new JMenu("Data");
-        final JMenuItem startGenerator = new JMenuItem("Start Generator");
-        final JMenuItem stopGenerator = new JMenuItem("Stop Generator");
-        startGenerator.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                stopGenerator.setEnabled(true);
-                startGenerator.setEnabled(false);
-                geoTrackGenerator.startGenerator();
-            }});
-        dataMenu.add(startGenerator);
-        
-        stopGenerator.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                stopGenerator.setEnabled(false);
-                startGenerator.setEnabled(true);
-                geoTrackGenerator.stopGenerator();
-            }});
-        stopGenerator.setEnabled(false);
-        dataMenu.add(stopGenerator);
-        menuBar.add(dataMenu);
-        frame.setJMenuBar(menuBar);
-    }
-    
-    private void buildGui() {
-        JFrame frame = new JFrame("MongoDB Replication Demo");
-        frame.getContentPane().add(this);
-        
-        
-        if (region != null) {
-            initGeneratorMenu(frame);
-            geoTrackGenerator.setRegion(region);
-        }
-        
-
-        // frame.setSize(640, 480);
-        frame.setSize(2048, 1024);
-        
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
-    }
-    
-    @SuppressWarnings("static-access")
-    void initializeAndParseCommandLineOptions(String[] args) {
-        Options options = new Options();
-        options.addOption(new Option( "help", "print this message" ));
-        options.addOption(OptionBuilder.withArgName("region")
-                .hasArg()
-                .withDescription(  "Optional geographic region name (e.g. east or west)" )
-                .create( "r" ));
-        
-
-        CommandLineParser parser = new GnuParser();
-        CommandLine line = null;
-        try {
-            line = parser.parse(options, args);
-            if (line.hasOption("help")) {
-                printHelpAndExit(options); 
-            }
-            initOptions(line);
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            printHelpAndExit(options);
-        } catch (Exception e) {
-            e.printStackTrace();
-            printHelpAndExit(options);
-        }
-    }
-    
-    private void initOptions(CommandLine line) throws UnknownHostException {
-        String region = line.getOptionValue("r");
-        this.region = region;
-    }
-
-    private static void printHelpAndExit(Options options) {
-        HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("flightDisplay", options);
-        System.exit(-1);
-    }
-
-    // Main application method
-    public static void main(String[] args) throws Exception {
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring-context.xml");
-        context.registerShutdownHook();
-        
-        try {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Replication Demo");
-            //System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Name");
-        } catch(Exception e) {
-            // ignore
-        }
-        
-        try {
-            FlightDisplay flightMap = context.getBean(FlightDisplay.class);
-            flightMap.initializeAndParseCommandLineOptions(args);
-            flightMap.buildGui();
-            // dirty hack to avoid NPEs presumably due to underlying async initialization of map components
-            Thread.sleep(3000);
-            flightMap.init();
-        } catch (Exception e) {
-            logger.error("Startup error", e);
-            System.exit(-1);
-        }
-        logger.debug("Init complete");
-        
-    }
-
-    private void init() throws IOException {
-        //replicationManager.addOplogEventListener(this);
-        
-        ReplicationSource myOplog = new ReplicationSource();
-        myOplog.setHostname("localhost");
-        myOplog.setPort(27017);
-        replicationManager.registerOplogEventListener(this, myOplog);
-        
-        replicationManager.start();
-
-	this.repaint();
-    }
-    
-    @Override
-    public void onRenderingCompleted(RenderingExecutorEvent event) {
-        logger.debug("onRenderingCompleted");
-    }
-
-    @Override
-    public void processRecord(BasicDBObject x) throws Exception {
-        DBObject obj = (DBObject) x.get("o");
-        String flightNum = (String) obj.get("flightNum");
-        final DrawingContext context = drawingContexts.get(flightNum);
-
-	if (flightNum == null) {
-	    return;
+		this.setMapContent(map);
+		crs = map.getMaxBounds().getCoordinateReferenceSystem();
+		this.setRenderer(new StreamingRenderer());
 	}
 
-        BasicDBList positions = (BasicDBList) obj.get("position");
-        String airline = (String)obj.get("airline");
+	// sets the location of the sprite component
+	private void drawSprite(DrawingContext context) {
+		context.setSpritePosition(getWorldToScreenTransform());
+	}
 
-        FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
-        flightInfo.setAirline(airline);
-        
-        
-        if (logger.isTraceEnabled()) {
-            logger.trace("processRecord(): " + context);
-        }
-        if (context != null) {
-            // logger.debug("Moving " + context);
-            context.changePosition(flightInfo);
-            drawSprite(context);
-        } else {
-            final DrawingContext newContext = new DrawingContext(flightInfo);
-    	    this.add(newContext);
+	private void initGeneratorMenu(JFrame frame) {
+		JMenuBar menuBar = new JMenuBar();
+		JMenu dataMenu = new JMenu("Data");
+		final JMenuItem startGenerator = new JMenuItem("Start Generator");
+		final JMenuItem stopGenerator = new JMenuItem("Stop Generator");
+		startGenerator.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				stopGenerator.setEnabled(true);
+				startGenerator.setEnabled(false);
+				geoTrackGenerator.startGenerator();
+			}
+		});
+		dataMenu.add(startGenerator);
 
-            // logger.debug("New context " + context);
-            drawingContexts.put(flightNum, newContext);
-            drawSprite(newContext);
+		stopGenerator.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				stopGenerator.setEnabled(false);
+				startGenerator.setEnabled(true);
+				geoTrackGenerator.stopGenerator();
+			}
+		});
+		stopGenerator.setEnabled(false);
+		dataMenu.add(stopGenerator);
+		menuBar.add(dataMenu);
+		frame.setJMenuBar(menuBar);
+	}
 
-	    this.repaint();
-        }
+	private void buildGui() {
+		JFrame frame = new JFrame("MongoDB Replication Demo");
+		frame.getContentPane().add(this);
 
-    }
+		if (region != null) {
+			initGeneratorMenu(frame);
+			geoTrackGenerator.setRegion(region);
+		}
 
-    @Override
-    public void close(String string) throws IOException {
-        // TODO Auto-generated method stub
+		// frame.setSize(640, 480);
+		frame.setSize(2048, 1024);
 
-    }
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
+	}
 
-    @Override
-    public void stats(long count, long skips, long duration, int lastTimestamp) {
-        // TODO Auto-generated method stub
+	@SuppressWarnings("static-access")
+	void initializeAndParseCommandLineOptions(String[] args) {
+		Options options = new Options();
+		options.addOption(new Option("help", "print this message"));
+		options.addOption(OptionBuilder
+				.withArgName("region")
+				.hasArg()
+				.withDescription(
+						"Optional geographic region name (e.g. east or west)")
+				.create("r"));
 
-    }
+		CommandLineParser parser = new GnuParser();
+		CommandLine line = null;
+		try {
+			line = parser.parse(options, args);
+			if (line.hasOption("help")) {
+				printHelpAndExit(options);
+			}
+			initOptions(line);
+		} catch (ParseException e) {
+			System.out.println(e.getMessage());
+			printHelpAndExit(options);
+		} catch (Exception e) {
+			e.printStackTrace();
+			printHelpAndExit(options);
+		}
+	}
+
+	private void initOptions(CommandLine line) throws UnknownHostException {
+		String region = line.getOptionValue("r");
+		this.region = region;
+	}
+
+	private static void printHelpAndExit(Options options) {
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp("flightDisplay", options);
+		System.exit(-1);
+	}
+
+	// Main application method
+	public static void main(String[] args) throws Exception {
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
+				"spring-context.xml");
+		context.registerShutdownHook();
+
+		try {
+			System.setProperty("apple.laf.useScreenMenuBar", "true");
+			System.setProperty(
+					"com.apple.mrj.application.apple.menu.about.name",
+					"Replication Demo");
+			// System.setProperty("com.apple.mrj.application.apple.menu.about.name",
+			// "Name");
+		} catch (Exception e) {
+			// ignore
+		}
+
+		try {
+			FlightDisplay flightMap = context.getBean(FlightDisplay.class);
+			flightMap.initializeAndParseCommandLineOptions(args);
+			flightMap.buildGui();
+			// dirty hack to avoid NPEs presumably due to underlying async
+			// initialization of map components
+			Thread.sleep(3000);
+			flightMap.init();
+		} catch (Exception e) {
+			logger.error("Startup error", e);
+			System.exit(-1);
+		}
+		logger.debug("Init complete");
+
+	}
+
+	private void init() throws IOException {
+		// replicationManager.addOplogEventListener(this);
+
+		ReplicationSource myOplog = new ReplicationSource();
+		myOplog.setHostname("localhost");
+		myOplog.setPort(27017);
+		replicationManager.registerOplogEventListener(this, myOplog);
+
+		replicationManager.start();
+
+		this.repaint();
+	}
+
+	@Override
+	public void onRenderingCompleted(RenderingExecutorEvent event) {
+		logger.debug("onRenderingCompleted");
+	}
+
+	@Override
+	public void processRecord(BasicDBObject x) throws Exception {
+		DBObject obj = (DBObject) x.get("o");
+		String flightNum = (String) obj.get("flightNum");
+		final DrawingContext context = drawingContexts.get(flightNum);
+
+		if (flightNum == null) {
+			return;
+		}
+
+		BasicDBList positions = (BasicDBList) obj.get("position");
+		String airline = (String) obj.get("airline");
+
+		FlightInfo flightInfo = new FlightInfo(flightNum,
+				(double) positions.get(0), (double) positions.get(1));
+		flightInfo.setAirline(airline);
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("processRecord(): " + context);
+		}
+		if (context != null) {
+			// logger.debug("Moving " + context);
+			context.changePosition(flightInfo);
+			drawSprite(context);
+		} else {
+			final DrawingContext newContext = new DrawingContext(flightInfo);
+			this.add(newContext);
+
+			// logger.debug("New context " + context);
+			drawingContexts.put(flightNum, newContext);
+			drawSprite(newContext);
+
+			this.repaint();
+		}
+
+	}
+
+	@Override
+	public void close(String string) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void stats(long count, long skips, long duration, int lastTimestamp) {
+		// TODO Auto-generated method stub
+
+	}
 
 }
