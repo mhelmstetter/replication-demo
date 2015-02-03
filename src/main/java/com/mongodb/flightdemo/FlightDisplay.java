@@ -99,92 +99,12 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         crs = map.getMaxBounds().getCoordinateReferenceSystem();
         this.setRenderer(new StreamingRenderer());
     }
-    
-    private void prepareGraphics(boolean createNewImage) {
-        Rectangle r = getVisibleRect();
-        if (backBuffer == null || createNewImage) {
-            backBuffer = GraphicsEnvironment.getLocalGraphicsEnvironment().
-                    getDefaultScreenDevice().getDefaultConfiguration().
-                    createCompatibleImage(r.width, r.height, Transparency.TRANSLUCENT);
 
-            if (backBufferGraphics != null) {
-                backBufferGraphics.dispose();
-            }
-
-            backBufferGraphics = backBuffer.createGraphics();
-            //clearLabebackBufferGraphics
-            BufferedImage image = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_ARGB);
-            image.setData(getBaseImage().getData(r));
-            
-            logger.debug("xxxxx");
-            backBufferGraphics.drawImage(image, 0, 0, null);
-
-        } else {
-            backBufferGraphics.setBackground(getBackground());
-            //backBufferGraphics.clearRect(0, 0, r.width, r.height);
-        }
-    }
-
-
-    // This is the top-level animation method. It erases
-    // the sprite (if showing), updates its position and then
-    // draws it.
+    // sets the location of the sprite component
     private void drawSprite(DrawingContext context) {
-
-	//        prepareGraphics(false);
-
-	//        Rectangle bounds = context.getSpriteScreenPos();
-        //bounds.grow(2, 2);
-	Raster background = null;
-	//        if (bounds != null) {
-            // TODO this can potentially throw ArrayIndexOutOfBoundsException "Coordinate out of bounds!"
-	//            background = getBaseImage().getData(bounds);
-	//        }
-
-        context.setSpritePosition(getWorldToScreenTransform(), crs, background);
-        // context.setSpriteBackground();
-	//        context.eraseSprite(backBufferGraphics);
-
-        // moveSprite(context);
-	//        context.paintSprite(backBufferGraphics);
-        // logger.debug("draw finished =======================");
-
+        context.setSpritePosition(getWorldToScreenTransform());
     }
 
-    protected void paint() {
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        if (drawingLock.tryLock()) {
-            try {
-                if (backBuffer != null) {
-                    System.out.println("****");
-                    g2.drawImage(backBuffer, imageOrigin.x, imageOrigin.y, null);
-                } else {
-                    System.out.println("null");
-                }
-            } finally {
-                drawingLock.unlock();
-            }
-        }
-    }
-
-
-
-    private Image rotateIcon(Image icon, int angle) {
-        int w = icon.getWidth(null);
-        int h = icon.getHeight(null);
-        int type = BufferedImage.TYPE_INT_RGB; // other options, see api
-        BufferedImage image = new BufferedImage(h, w, type);
-        Graphics2D g2 = image.createGraphics();
-        double x = (h - w) / 2.0;
-        double y = (w - h) / 2.0;
-        AffineTransform at = AffineTransform.getTranslateInstance(x, y);
-        at.rotate(Math.toRadians(angle), w / 2.0, h / 2.0);
-        g2.drawImage(icon, at, null);
-        g2.dispose();
-        icon = new ImageIcon(image).getImage();
-        return icon;
-    }
-    
     private void initGeneratorMenu(JFrame frame) {
         JMenuBar menuBar = new JMenuBar();
         JMenu dataMenu = new JMenu("Data");
@@ -306,7 +226,6 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         replicationManager.registerOplogEventListener(this, myOplog);
         
         replicationManager.start();
-        //prepareGraphics(false);
 
 	this.repaint();
     }
@@ -322,18 +241,10 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         String flightNum = (String) obj.get("flightNum");
         final DrawingContext context = drawingContexts.get(flightNum);
 
-        if (flightNum == null || context == null) {
-	    logger.debug("*****");
-	    //	    SwingUtilities.invokeAndWait(new Runnable() {
-	    //		    public void run() {
-	    //			paint();
-	    //		    }
-	    //		});
-	    if (flightNum == null) {
-		return;
-	    }
-        	
+	if (flightNum == null) {
+	    return;
 	}
+
         BasicDBList positions = (BasicDBList) obj.get("position");
         String airline = (String)obj.get("airline");
 
@@ -348,26 +259,15 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             // logger.debug("Moving " + context);
             context.changePosition(flightInfo);
             drawSprite(context);
-           
-            
-
         } else {
             final DrawingContext newContext = new DrawingContext(flightInfo);
-	    
-	    this.add(newContext);
+    	    this.add(newContext);
 
             // logger.debug("New context " + context);
             drawingContexts.put(flightNum, newContext);
             drawSprite(newContext);
 
 	    this.repaint();
-
-//            SwingUtilities.invokeAndWait(new Runnable() {
-//                public void run() {
-//                    paint();
-//                }
-//            });
-
         }
 
     }
