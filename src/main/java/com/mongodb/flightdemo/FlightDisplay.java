@@ -131,22 +131,22 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     // draws it.
     private void drawSprite(DrawingContext context) {
 
-        prepareGraphics(false);
+	//        prepareGraphics(false);
 
-        Rectangle bounds = context.getSpriteScreenPos();
+	//        Rectangle bounds = context.getSpriteScreenPos();
         //bounds.grow(2, 2);
-        Raster background = null;
-        if (bounds != null) {
+	Raster background = null;
+	//        if (bounds != null) {
             // TODO this can potentially throw ArrayIndexOutOfBoundsException "Coordinate out of bounds!"
-            background = getBaseImage().getData(bounds);
-        }
+	//            background = getBaseImage().getData(bounds);
+	//        }
 
         context.setSpritePosition(getWorldToScreenTransform(), crs, background);
         // context.setSpriteBackground();
-        context.eraseSprite(backBufferGraphics);
+	//        context.eraseSprite(backBufferGraphics);
 
         // moveSprite(context);
-        context.paintSprite(backBufferGraphics);
+	//        context.paintSprite(backBufferGraphics);
         // logger.debug("draw finished =======================");
 
     }
@@ -306,7 +306,9 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         replicationManager.registerOplogEventListener(this, myOplog);
         
         replicationManager.start();
-        prepareGraphics(false);
+        //prepareGraphics(false);
+
+	this.repaint();
     }
     
     @Override
@@ -319,18 +321,19 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         DBObject obj = (DBObject) x.get("o");
         String flightNum = (String) obj.get("flightNum");
         final DrawingContext context = drawingContexts.get(flightNum);
+
         if (flightNum == null || context == null) {
-        	logger.debug("*****");
-        	SwingUtilities.invokeAndWait(new Runnable() {
-                public void run() {
-                    paint();
-                }
-            });
-        	if (flightNum == null) {
-        	    return;
-        	}
+	    logger.debug("*****");
+	    //	    SwingUtilities.invokeAndWait(new Runnable() {
+	    //		    public void run() {
+	    //			paint();
+	    //		    }
+	    //		});
+	    if (flightNum == null) {
+		return;
+	    }
         	
-        }
+	}
         BasicDBList positions = (BasicDBList) obj.get("position");
         String airline = (String)obj.get("airline");
 
@@ -350,9 +353,15 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         } else {
             final DrawingContext newContext = new DrawingContext(flightInfo);
+	    
+	    this.add(newContext);
+
             // logger.debug("New context " + context);
             drawingContexts.put(flightNum, newContext);
             drawSprite(newContext);
+
+	    this.repaint();
+
 //            SwingUtilities.invokeAndWait(new Runnable() {
 //                public void run() {
 //                    paint();
