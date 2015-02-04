@@ -1,29 +1,20 @@
 package com.mongodb.flightdemo;
 
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.Transparency;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
 import java.io.IOException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.SwingUtilities;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -54,9 +45,8 @@ import org.springframework.stereotype.Component;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.flightxml.GeoTrackGenerator;
+import com.mongodb.flightxml.FlightTrackGenerator;
 import com.mongodb.oplog.OplogEventListener;
-import com.mongodb.oplog.OplogTailThread;
 import com.mongodb.replication.ReplicationManager;
 import com.mongodb.replication.domain.ReplicationSource;
 
@@ -68,7 +58,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     private ReplicationManager replicationManager;
     
     @Autowired
-    private GeoTrackGenerator geoTrackGenerator;
+    private FlightTrackGenerator geoTrackGenerator;
 
     protected static final Logger logger = LoggerFactory.getLogger(FlightDisplay.class);
 
