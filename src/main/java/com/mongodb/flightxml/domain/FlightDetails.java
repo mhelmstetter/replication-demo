@@ -4,6 +4,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Date;
+
 public class FlightDetails {
     
     private String _id;
@@ -12,7 +14,8 @@ public class FlightDetails {
     private String toIata;
     private String airline;
     private String aircraft;
-    
+    private long departure;
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)
@@ -28,11 +31,17 @@ public class FlightDetails {
     @SerializedName("trail")
     private double[] track;
     
-    private int trackPosition;
-    
+    private int trackPosition = -1;
+
     public Track getNextTrack() {
-        if (trackPosition+3 <= track.length) {
-            return new Track(track[trackPosition++], track[trackPosition++], (int)track[trackPosition++]);
+	// track data is in the array backawards so we need to process the points in reverse
+	if (trackPosition == -1) {
+	    trackPosition = track.length;
+	}
+
+        if (trackPosition >= 3) {
+	    trackPosition -= 3;
+            return new Track(track[trackPosition], track[trackPosition + 1], (int)track[trackPosition + 2]);
         }
         return null;
         
@@ -98,4 +107,15 @@ public class FlightDetails {
         return trackPosition;
     }
 
+    public void setDeparture(long departure) {
+	this.departure = departure;
+    }
+
+    public long getDeparture() {
+	return this.departure;
+    }
+
+    public Date getDepartureDateTime() {
+	return new Date(departure);
+    }
 }
