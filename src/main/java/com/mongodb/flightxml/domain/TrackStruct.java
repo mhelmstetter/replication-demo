@@ -1,5 +1,7 @@
 package com.mongodb.flightxml.domain;
 
+import org.joda.time.DateTime;
+
 public class TrackStruct {
 
     private int altitude;
@@ -12,6 +14,10 @@ public class TrackStruct {
     private float longitude;
     
     private transient HistoricalFlightTrack parent;
+    
+    public DateTime getDateTime() {
+        return new DateTime(timestamp);
+    }
 
     public int getAltitude() {
         return altitude;

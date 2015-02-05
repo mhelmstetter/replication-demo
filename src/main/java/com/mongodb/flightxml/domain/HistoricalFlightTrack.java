@@ -1,7 +1,5 @@
 package com.mongodb.flightxml.domain;
 
-import java.util.List;
-
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -14,6 +12,7 @@ public class HistoricalFlightTrack {
     private String aircrafttype;
     private String destination;
     private String origin;
+    private String airline;
     
     @SerializedName("GetHistoricalTrackResult")
     private HistoricalTrack track;
@@ -56,6 +55,14 @@ public class HistoricalFlightTrack {
 
     public void setTrack(HistoricalTrack track) {
         this.track = track;
+    }
+
+    public String getAirline() {
+        return airline;
+    }
+
+    public void setAirline(String airline) {
+        this.airline = airline;
     }
 
 }

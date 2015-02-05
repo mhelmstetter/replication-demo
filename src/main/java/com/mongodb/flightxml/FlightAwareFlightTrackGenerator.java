@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
@@ -58,8 +59,7 @@ public class FlightAwareFlightTrackGenerator extends AbstractFlightTrackGenerato
 
                 for (TrackStruct trackStruct : trackData) {
                     trackStruct.setParent(track);
-                    int ts = trackStruct.getTimestamp();
-                    DateTime dt = new DateTime(ts * 1000);
+                    DateTime dt = new DateTime(trackStruct.getTimestamp()*1000L);
                     int secondOfDay = dt.getSecondOfDay();
                     List<TrackStruct> list = trackBuckets.get(secondOfDay);
                     if (list == null) {
@@ -92,8 +92,9 @@ public class FlightAwareFlightTrackGenerator extends AbstractFlightTrackGenerato
             while (minuteBucketsIterator.hasNext() && requestStop == false) {
 
                 List<TrackStruct> list = minuteBucketsIterator.next();
-
+                //logger.debug(list.size()+"");
                 for (TrackStruct track : list) {
+                    //logger.debug(new DateTime(track.getTimestamp()*1000L)+" "+track.getTimestamp());
                     DBObject geoTrack = convertTrackStructToGeoTrack(track);
                     flightTrack.insert(geoTrack);
                 }

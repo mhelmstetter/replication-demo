@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -63,8 +64,9 @@ public class FlightXmlScraper {
     protected List<FlightDetails> flight24FlightDetailsList;
     
     Multiset<String> flight24AirportsSet = HashMultiset.create();
+    
+    private List<String> airlines = Arrays.asList(new String[] {"AAL"});
 
-    private int maxScrapes = 5;
 
     @PostConstruct
     public void init() {
@@ -101,30 +103,33 @@ public class FlightXmlScraper {
         
         setMaximumResultSize(1000);
 
-        FleetArrivedResult arrived = fleetArrived("UAL", 1000);
-        List<ArrivalFlightStruct> arrivalFlights = arrived.getArrivals();
-        for (ArrivalFlightStruct arrival : arrivalFlights) {
-            String arrivalJson = gson.toJson(arrival);
-            DBObject arrivalDbo = (DBObject)JSON.parse(arrivalJson);
-            
-            int departureTime = arrival.getActualDepartureTime();
-            String ident = arrival.getIdent();
-            String id = ident + "-" + arrival.getOrigin() + "-" + arrival.getDestination();
-            DBObject existing = tracks.findOne(new BasicDBObject("_id", id));
-            if (existing != null) {
-                logger.debug(id + " already exists");
-                continue;
+        for (String airline : airlines) {
+            FleetArrivedResult arrived = fleetArrived(airline, 1000);
+            List<ArrivalFlightStruct> arrivalFlights = arrived.getArrivals();
+            for (ArrivalFlightStruct arrival : arrivalFlights) {
+                String arrivalJson = gson.toJson(arrival);
+                DBObject arrivalDbo = (DBObject)JSON.parse(arrivalJson);
+                
+                int departureTime = arrival.getActualDepartureTime();
+                String ident = arrival.getIdent();
+                String id = ident + "-" + arrival.getOrigin() + "-" + arrival.getDestination();
+                DBObject existing = tracks.findOne(new BasicDBObject("_id", id));
+                if (existing != null) {
+                    logger.debug(id + " already exists");
+                    continue;
+                }
+                
+                String faFlightId = this.getFlightId(ident, departureTime);
+                String historicalTrack = getHistoricalTrackAsString(faFlightId);
+                DBObject historicalTrackDbo = (DBObject)JSON.parse(historicalTrack);
+                historicalTrackDbo.put("faFlightId", faFlightId);
+                historicalTrackDbo.put("airline", airline);
+                
+                historicalTrackDbo.put("_id", id);
+                historicalTrackDbo.putAll(arrivalDbo);
+                tracks.save(historicalTrackDbo);
+                logger.debug("Saved " + id + " depart: " + departureTime + " arrive: "  + arrival.getActualArrivalTime());
             }
-            
-            String faFlightId = this.getFlightId(ident, departureTime);
-            String historicalTrack = getHistoricalTrackAsString(faFlightId);
-            DBObject historicalTrackDbo = (DBObject)JSON.parse(historicalTrack);
-            historicalTrackDbo.put("faFlightId", faFlightId);
-            
-            historicalTrackDbo.put("_id", id);
-            historicalTrackDbo.putAll(arrivalDbo);
-            tracks.save(historicalTrackDbo);
-            logger.debug("Saved " + id);
         }
     }
 
