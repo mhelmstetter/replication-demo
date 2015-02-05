@@ -12,7 +12,11 @@
 
 	<context:component-scan base-package="com.mongodb" />
 
-	<bean id="geoTrackGenerator" class="com.mongodb.flightxml.GeoTrackGenerator">
+	<context:property-placeholder
+		location="classpath:flightaware.properties"
+		ignore-unresolvable="true" />
+
+	<bean id="geoTrackGenerator" class="com.mongodb.flightxml.FlightAwareFlightTrackGenerator">
 		<property name="mongoClient">
 			<bean id="mongo" class="com.mongodb.MongoClient">
 				<constructor-arg type="java.lang.String" value="localhost" />
@@ -23,15 +27,25 @@
 		<property name="outputCollectionName" value="flightTrack" />
 	</bean>
 	
-	<bean id="replicationManager" class="com.mongodb.replication.ReplicationManager">
-	
+	<bean id="airlineSearch" class="com.mongodb.flightxml.AirlineSearch">
+		<property name="airlinesDatResource" value="classpath:data/airlines.dat"/>
 	</bean>
 	
-	<bean id="oplogTailThread" class="com.mongodb.oplog.OplogTailThread" scope="prototype">
+	<bean id="FlightXml" class="com.mongodb.flightxml.FlightXmlScraper">
+		<property name="apiKey" value="${apiKey}" />
+		<property name="username" value="${username}" />
+	</bean>
+
+	<bean id="replicationManager" class="com.mongodb.replication.ReplicationManager">
+
+	</bean>
+
+	<bean id="oplogTailThread" class="com.mongodb.oplog.OplogTailThread"
+		scope="prototype">
 		<property name="timestampPersister">
 			<bean class="com.mongodb.oplog.FileTimestampPersister"></bean>
 		</property>
-	
+
 	</bean>
 
 
@@ -41,7 +55,8 @@
 		<constructor-arg type="java.lang.String" value="localhost" />
 		<constructor-arg type="int" value="27017" />
 	</bean>
-	<mongo:db-factory id="mongoDbFactory" dbname="replicationConfig" mongo-ref="mongo" />
+	<mongo:db-factory id="mongoDbFactory" dbname="replicationConfig"
+		mongo-ref="mongo" />
 	<bean id="mappingContext"
 		class="org.springframework.data.mongodb.core.mapping.MongoMappingContext" />
 	<bean id="defaultMongoTypeMapper"

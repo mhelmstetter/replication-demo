@@ -1,10 +1,12 @@
 package com.mongodb.flightxml.domain;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import com.google.gson.annotations.SerializedName;
-
-import java.util.Date;
 
 public class FlightDetails {
     
@@ -15,6 +17,7 @@ public class FlightDetails {
     private String airline;
     private String aircraft;
     private long departure;
+    private long dep_schd;
 
     @Override
     public String toString() {
@@ -32,19 +35,16 @@ public class FlightDetails {
     private double[] track;
     
     private int trackPosition = -1;
+    
+    public void reverseTrack() {
+        Collections.reverse(Arrays.asList(track));
+    }
 
     public Track getNextTrack() {
-	// track data is in the array backawards so we need to process the points in reverse
-	if (trackPosition == -1) {
-	    trackPosition = track.length;
-	}
-
-        if (trackPosition >= 3) {
-	    trackPosition -= 3;
-            return new Track(track[trackPosition], track[trackPosition + 1], (int)track[trackPosition + 2]);
+        if (trackPosition+3 <= track.length) {
+            return new Track(track[trackPosition++], track[trackPosition++], (int)track[trackPosition++]);
         }
         return null;
-        
     }
 
     public String get_id() {
@@ -117,5 +117,9 @@ public class FlightDetails {
 
     public Date getDepartureDateTime() {
 	return new Date(departure);
+    }
+
+    public long getDep_schd() {
+        return dep_schd;
     }
 }
