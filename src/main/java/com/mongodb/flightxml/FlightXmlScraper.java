@@ -65,7 +65,7 @@ public class FlightXmlScraper {
     
     Multiset<String> flight24AirportsSet = HashMultiset.create();
     
-    private List<String> airlines = Arrays.asList(new String[] {"AAL"});
+    private List<String> airlines = Arrays.asList(new String[] {"JAI"});
 
 
     @PostConstruct

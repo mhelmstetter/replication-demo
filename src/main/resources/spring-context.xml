@@ -27,14 +27,18 @@
 		<property name="outputCollectionName" value="flightTrack" />
 	</bean>
 	
+	<!--  
+	
 	<bean id="airlineSearch" class="com.mongodb.flightxml.AirlineSearch">
 		<property name="airlinesDatResource" value="classpath:data/airlines.dat"/>
 	</bean>
+	
 	
 	<bean id="FlightXml" class="com.mongodb.flightxml.FlightXmlScraper">
 		<property name="apiKey" value="${apiKey}" />
 		<property name="username" value="${username}" />
 	</bean>
+	-->
 
 	<bean id="replicationManager" class="com.mongodb.replication.ReplicationManager">
 
