@@ -12,10 +12,7 @@
 
 	<context:component-scan base-package="com.mongodb" />
 
-	<context:property-placeholder
-		location="classpath:flightaware.properties"
-		ignore-unresolvable="true" />
-
+	
 	<bean id="geoTrackGenerator" class="com.mongodb.flightxml.FlightAwareFlightTrackGenerator">
 		<property name="mongoClient">
 			<bean id="mongo" class="com.mongodb.MongoClient">
@@ -27,7 +24,11 @@
 		<property name="outputCollectionName" value="flightTrack" />
 	</bean>
 	
-	<!--  
+	<!--
+	<context:property-placeholder
+		location="classpath:flightaware.properties"
+		ignore-unresolvable="true" />
+	  
 	
 	<bean id="airlineSearch" class="com.mongodb.flightxml.AirlineSearch">
 		<property name="airlinesDatResource" value="classpath:data/airlines.dat"/>

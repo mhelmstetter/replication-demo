@@ -2,7 +2,7 @@ package com.mongodb.flightxml.domain;
 
 import org.joda.time.DateTime;
 
-public class TrackStruct {
+public class TrackStruct implements Cloneable {
 
     private int altitude;
     private String updateType;
@@ -17,6 +17,14 @@ public class TrackStruct {
     
     public DateTime getDateTime() {
         return new DateTime(timestamp);
+    }
+
+    public Object clone() {
+	try {
+	    return super.clone();
+	} catch (CloneNotSupportedException e) {
+	    return null;
+	}
     }
 
     public int getAltitude() {

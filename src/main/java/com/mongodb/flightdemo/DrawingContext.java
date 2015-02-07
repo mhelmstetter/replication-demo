@@ -1,24 +1,18 @@
 package com.mongodb.flightdemo;
 
-import java.awt.Graphics2D;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Rectangle;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
-import java.awt.image.AffineTransformOp;
 
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.referencing.GeodeticCalculator;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +22,13 @@ class DrawingContext extends JComponent {
 
     private final static Image GREEN_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-green.png")).getImage();
     private final static Image BLUE_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-blue.png")).getImage();
+    private final static Image RED_PLANE = new ImageIcon(DrawingContext.class.getResource("/images/plane-red.png")).getImage();
     private final static Image RED_DOT = new ImageIcon(DrawingContext.class.getResource("/images/dot-red.png")).getImage();
     
-    private Image image;
+    private Image image = GREEN_PLANE;
     private double angle = 0;
+    
+    private int delay = 0;
 
     private FlightInfo flightInfo;
 
@@ -41,11 +38,13 @@ class DrawingContext extends JComponent {
         this.flightInfo = flightInfo;
 	this.crs = crs;
 
-        if (flightInfo.getAirline() != null) {
-            this.image = GREEN_PLANE;
-        } else {
-            this.image = BLUE_PLANE;
-        }
+//        if (flightInfo.getAirline() != null) {
+//            this.image = GREEN_PLANE;
+//        } else {
+//            this.image = BLUE_PLANE;
+//        }
+	
+	
 
 	Dimension size = new Dimension(image.getWidth(null), image.getHeight(null));
 	setPreferredSize(size);
@@ -146,5 +145,16 @@ class DrawingContext extends JComponent {
 
         this.flightInfo = flightInfo;        
     }
+
+	public int getDelay() {
+		return delay;
+	}
+
+	public void setDelay(int delay) {
+		this.delay = delay;
+		if (delay > 10) {
+			this.image = RED_PLANE;
+		}
+	}
 
 }

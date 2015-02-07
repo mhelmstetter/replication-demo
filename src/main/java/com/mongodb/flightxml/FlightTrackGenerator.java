@@ -11,5 +11,9 @@ public interface FlightTrackGenerator {
 	public void setOutputCollectionName(String outputCollectionName);
 
 	public void setRegion(String region);
+	
+	public void increaseDelay();
+	
+	public void decreaseDelay();
 
 }
