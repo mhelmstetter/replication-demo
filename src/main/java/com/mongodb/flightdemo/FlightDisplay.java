@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
@@ -139,6 +141,18 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+        
+        this.addKeyListener(new KeyAdapter() {
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if (e.getKeyChar() == 's') {
+					geoTrackGenerator.increaseDelay();
+				} else if (e.getKeyChar() == 'f') {
+					geoTrackGenerator.decreaseDelay();
+				}
+			}
+		});
     }
     
     @SuppressWarnings("static-access")
@@ -237,6 +251,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
         BasicDBList positions = (BasicDBList) obj.get("position");
         String airline = (String)obj.get("airline");
+	int groundspeed = (int)obj.get("groundSpeed");
 
         FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
         flightInfo.setAirline(airline);
@@ -247,8 +262,13 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
         }
         if (context != null) {
             // logger.debug("Moving " + context);
-            context.changePosition(flightInfo);
-            drawSprite(context);
+	    // if groundspeed is 0, remove the plane from the map
+	    if (groundspeed == 0) {
+		this.remove(context);
+	    } else {
+		context.changePosition(flightInfo);
+		drawSprite(context);
+	    }
         } else {
             final DrawingContext newContext = new DrawingContext(flightInfo, crs);
     	    this.add(newContext);
@@ -256,10 +276,9 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             // logger.debug("New context " + context);
             drawingContexts.put(flightNum, newContext);
             drawSprite(newContext);
-
-	    this.repaint();
         }
 
+	this.repaint();
     }
 
     @Override

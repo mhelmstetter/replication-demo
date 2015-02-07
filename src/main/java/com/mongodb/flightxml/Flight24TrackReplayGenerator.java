@@ -181,4 +181,16 @@ public class Flight24TrackReplayGenerator extends AbstractFlightTrackGenerator i
 		thread = new Thread(this, "GeoTrackGenerator");
 		thread.start();
 	}
+
+	@Override
+	public void increaseDelay() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void decreaseDelay() {
+		// TODO Auto-generated method stub
+		
+	}
 }
