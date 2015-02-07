@@ -26,6 +26,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.bson.types.BSONTimestamp;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
@@ -240,46 +241,54 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
     }
 
     @Override
-    public void processRecord(BasicDBObject x) throws Exception {
-        DBObject obj = (DBObject) x.get("o");
-        String flightNum = (String) obj.get("flightNum");
-        final DrawingContext context = drawingContexts.get(flightNum);
+	public void processRecord(BasicDBObject x) throws Exception {
+		// logger.debug(""+x);
+		DBObject obj = (DBObject) x.get("o");
+		String flightNum = (String) obj.get("flightNum");
+		BSONTimestamp tsObj = (BSONTimestamp) x.get("ts");
+		long ts = tsObj.getTime();
+		long current = System.currentTimeMillis() / 1000;
+		int delta = (int)(current - ts);
+		//logger.debug("delta " + delta);
+		final DrawingContext context = drawingContexts.get(flightNum);
 
-	if (flightNum == null) {
-	    return;
+		if (flightNum == null) {
+			return;
+		}
+
+		BasicDBList positions = (BasicDBList) obj.get("position");
+		String airline = (String) obj.get("airline");
+		int groundspeed = (int) obj.get("groundSpeed");
+
+		FlightInfo flightInfo = new FlightInfo(flightNum,
+				(double) positions.get(0), (double) positions.get(1));
+		flightInfo.setAirline(airline);
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("processRecord(): " + context);
+		}
+		if (context != null) {
+			// logger.debug("Moving " + context);
+			// if groundspeed is 0, remove the plane from the map
+			context.setDelay(delta);
+			if (groundspeed == 0) {
+				this.remove(context);
+			} else {
+				context.changePosition(flightInfo);
+				drawSprite(context);
+			}
+		} else {
+			final DrawingContext newContext = new DrawingContext(flightInfo,
+					crs);
+			this.add(newContext);
+
+			// logger.debug("New context " + context);
+			drawingContexts.put(flightNum, newContext);
+			drawSprite(newContext);
+		}
+
+		this.repaint();
 	}
-
-        BasicDBList positions = (BasicDBList) obj.get("position");
-        String airline = (String)obj.get("airline");
-	int groundspeed = (int)obj.get("groundSpeed");
-
-        FlightInfo flightInfo = new FlightInfo(flightNum, (double) positions.get(0), (double) positions.get(1));
-        flightInfo.setAirline(airline);
-        
-        
-        if (logger.isTraceEnabled()) {
-            logger.trace("processRecord(): " + context);
-        }
-        if (context != null) {
-            // logger.debug("Moving " + context);
-	    // if groundspeed is 0, remove the plane from the map
-	    if (groundspeed == 0) {
-		this.remove(context);
-	    } else {
-		context.changePosition(flightInfo);
-		drawSprite(context);
-	    }
-        } else {
-            final DrawingContext newContext = new DrawingContext(flightInfo, crs);
-    	    this.add(newContext);
-
-            // logger.debug("New context " + context);
-            drawingContexts.put(flightNum, newContext);
-            drawSprite(newContext);
-        }
-
-	this.repaint();
-    }
 
     @Override
     public void close(String string) throws IOException {
