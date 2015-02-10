@@ -2,7 +2,7 @@ package com.mongodb.flightxml;
 
 public interface FlightTrackGenerator {
 
-	public void startGenerator();
+	public void startGenerator(String region);
 
 	public void stopGenerator();
 

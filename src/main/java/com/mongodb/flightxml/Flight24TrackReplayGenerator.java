@@ -170,7 +170,7 @@ public class Flight24TrackReplayGenerator extends AbstractFlightTrackGenerator i
     }
     
     @Override
-	public void startGenerator() {
+	public void startGenerator(String region) {
 		requestStop = false;
 		if (flightDetailsList == null) {
 			readData();

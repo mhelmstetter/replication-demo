@@ -108,7 +108,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
             public void actionPerformed(ActionEvent e) {
                 stopGenerator.setEnabled(true);
                 startGenerator.setEnabled(false);
-                geoTrackGenerator.startGenerator();
+                geoTrackGenerator.startGenerator(region);
             }});
         dataMenu.add(startGenerator);
         

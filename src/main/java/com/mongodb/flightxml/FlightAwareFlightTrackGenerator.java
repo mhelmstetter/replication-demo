@@ -27,9 +27,11 @@ public class FlightAwareFlightTrackGenerator extends AbstractFlightTrackGenerato
     
     private long delay = 50;
     private long increment = 5;
+    private String region;
 
     @Override
-    public void startGenerator() {
+    public void startGenerator(String region) {
+        this.region = region;
         requestStop = false;
         if (trackList == null) {
             readData();
@@ -43,7 +45,13 @@ public class FlightAwareFlightTrackGenerator extends AbstractFlightTrackGenerato
         BufferedReader reader = null;
         try {
             trackList = new ArrayList<HistoricalTrack>();
-            InputStream is = resourceLoader.getResource("classpath:data/faTracks.json").getInputStream();
+            String resourceName = null;
+            if (region != null) {
+                resourceName = "classpath:data/faTracks_" + region + ".json";
+            } else {
+                resourceName = "classpath:data/faTracks.json";
+            }
+            InputStream is = resourceLoader.getResource(resourceName).getInputStream();
             reader = new BufferedReader(new InputStreamReader(is));
 
             String currentLine = null;
