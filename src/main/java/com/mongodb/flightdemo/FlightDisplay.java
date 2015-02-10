@@ -258,11 +258,17 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 
 		BasicDBList positions = (BasicDBList) obj.get("position");
 		String airline = (String) obj.get("airline");
+		String aircraft = (String) obj.get("aircraft");
+		String fromIata = (String) obj.get("fromIata");
+		String toIata = (String) obj.get("toIata");
 		int groundspeed = (int) obj.get("groundSpeed");
 
 		FlightInfo flightInfo = new FlightInfo(flightNum,
 				(double) positions.get(0), (double) positions.get(1));
 		flightInfo.setAirline(airline);
+		flightInfo.setAircraft(aircraft);
+		flightInfo.setFromIata(fromIata);
+		flightInfo.setToIata(toIata);
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("processRecord(): " + context);
