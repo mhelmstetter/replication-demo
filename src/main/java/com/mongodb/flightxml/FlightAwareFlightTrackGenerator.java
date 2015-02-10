@@ -5,11 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-
 import java.util.List;
 import java.util.TreeMap;
 
 import org.joda.time.DateTime;
+import org.joda.time.Days;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -69,10 +69,25 @@ public class FlightAwareFlightTrackGenerator extends AbstractFlightTrackGenerato
 
 				TrackStruct lastTrackStruct = null;
 				int secondOfDay = 0;
-				int firstTimestamp = trackData.get(0).getTimestamp();
+				TrackStruct firstEvent = trackData.get(0);
+				TrackStruct lastEvent = trackData.get(trackData.size()-1);
+				DateTime startDate = new DateTime(firstEvent.getTimestamp()*1000L);
+				DateTime endDate = new DateTime(lastEvent.getTimestamp()*1000L);
+				
 				for (TrackStruct trackStruct : trackData) {
 					trackStruct.setParent(track);
-					secondOfDay = trackStruct.getTimestamp() - firstTimestamp;
+					
+					
+					DateTime currentPointDate = new DateTime(trackStruct.getTimestamp()*1000L);
+					secondOfDay = currentPointDate.getSecondOfDay();
+					
+					// dirty hack
+					if (currentPointDate.getDayOfYear() > startDate.getDayOfYear()) {
+						secondOfDay = currentPointDate.getSecondOfDay() + startDate.getSecondOfDay();
+					}
+					//logger.debug(secondOfDay+"");
+                    
+					//secondOfDay = trackStruct.getTimestamp() - firstTimestamp;
 					List<TrackStruct> list = trackBuckets.get(secondOfDay);
 					if (list == null) {
 						list = new ArrayList<TrackStruct>();
