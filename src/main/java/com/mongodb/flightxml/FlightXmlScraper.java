@@ -65,12 +65,13 @@ public class FlightXmlScraper {
     
     Multiset<String> flight24AirportsSet = HashMultiset.create();
     
-    private List<String> airlines = Arrays.asList(new String[] {"JAI"});
+    private List<String> airlines = Arrays.asList(new String[] {"UPS"});
 
 
     @PostConstruct
     public void init() {
         String authString = username + ":" + apiKey;
+        logger.debug("authString: " + authString);
         authStringEncoded = Base64.encodeBase64String(authString.getBytes());
         DB db = mongo.getDB("flightAware");
         tracks = db.getCollection("tracks");
@@ -81,7 +82,14 @@ public class FlightXmlScraper {
         URL url = new URL(urlString);
         URLConnection urlConnection = url.openConnection();
         urlConnection.setRequestProperty("Authorization", "Basic " + authStringEncoded);
-        InputStream is = urlConnection.getInputStream();
+        InputStream is = null;
+        try {
+            is = urlConnection.getInputStream();
+        } catch(Exception e) {
+            logger.error("Connection error", e);
+            throw e;
+        }
+        
         InputStreamReader isr = new InputStreamReader(is);
 
         int numCharsRead;
@@ -101,7 +109,7 @@ public class FlightXmlScraper {
     public void scrape() throws IOException, ParseException {
         //readFlight24Data();
         
-        setMaximumResultSize(1000);
+        setMaximumResultSize(200);
 
         for (String airline : airlines) {
             FleetArrivedResult arrived = fleetArrived(airline, 1000);
@@ -220,7 +228,7 @@ public class FlightXmlScraper {
     }
 
     public static void main(String[] args) throws Exception {
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring-context.xml");
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("spring-flight-scraper.xml");
         FlightXmlScraper f = context.getBean(FlightXmlScraper.class);
 
         // SimpleDateFormat sdf = new SimpleDateFormat("M/dd/yyyy");
