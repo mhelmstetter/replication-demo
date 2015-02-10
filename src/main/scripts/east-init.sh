@@ -3,6 +3,7 @@
 WORLD=192.168.1.104
 
 mongo replicationConfig <<EOF
+db.replicationConfig.drop()
 db.replicationConfig.save(
   {
 	"_id" : NumberLong(2),

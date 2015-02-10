@@ -3,6 +3,7 @@
 WEST=192.168.2.101
 
 mongo replicationConfig <<EOF
+db.replicationConfig.drop()
 db.replicationConfig.save(
   {
 	"_id" : NumberLong(0),
