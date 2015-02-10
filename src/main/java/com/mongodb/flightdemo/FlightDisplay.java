@@ -257,18 +257,34 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 		}
 
 		BasicDBList positions = (BasicDBList) obj.get("position");
-		String airline = (String) obj.get("airline");
-		String aircraft = (String) obj.get("aircraft");
-		String fromIata = (String) obj.get("fromIata");
-		String toIata = (String) obj.get("toIata");
+		
 		int groundspeed = (int) obj.get("groundSpeed");
-
-		FlightInfo flightInfo = new FlightInfo(flightNum,
-				(double) positions.get(0), (double) positions.get(1));
-		flightInfo.setAirline(airline);
-		flightInfo.setAircraft(aircraft);
-		flightInfo.setFromIata(fromIata);
-		flightInfo.setToIata(toIata);
+		int altitude = (int)obj.get("altitude");
+		
+		FlightInfo flightInfo = null;
+		Double previousLon = null;
+		Double previousLat = null;
+		if (context != null) {
+			flightInfo = context.getFlightInfo();
+			previousLon = flightInfo.getLon();
+			previousLat = flightInfo.getLat();
+		} else {
+			flightInfo = new FlightInfo();
+			flightInfo.setFlightNum(flightNum);
+			String airline = (String) obj.get("airline");
+			String aircraft = (String) obj.get("aircraft");
+			String fromIata = (String) obj.get("fromIata");
+			String toIata = (String) obj.get("toIata");
+			flightInfo.setAirline(airline);
+			flightInfo.setAircraft(aircraft);
+			flightInfo.setFromIata(fromIata);
+			flightInfo.setToIata(toIata);
+		}
+		
+		flightInfo.setLat((double) positions.get(0));
+		flightInfo.setLon((double) positions.get(1));
+		flightInfo.setGroundSpeed(groundspeed);
+		flightInfo.setAltitude(altitude);
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("processRecord(): " + context);
@@ -280,7 +296,7 @@ public class FlightDisplay extends JMapPane implements OplogEventListener {
 			if (groundspeed == 0) {
 				this.remove(context);
 			} else {
-				context.changePosition(flightInfo);
+				context.changePosition(previousLat, previousLon);
 				drawSprite(context);
 			}
 		} else {

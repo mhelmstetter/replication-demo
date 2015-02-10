@@ -236,7 +236,7 @@ public class OplogTailThread extends Thread {
 
         double brate = (double) count / ((duration) / 1000.0);
         if (enableOutput)
-            logger.debug(collectionName + ": " + LONG_FORMAT.format(count) + " records, "
+            logger.trace(collectionName + ": " + LONG_FORMAT.format(count) + " records, "
                     + LONG_FORMAT.format(brate) + " req/sec, " + LONG_FORMAT.format(skips)
                     + " skips");
     }

@@ -41,17 +41,17 @@ public class DrawingContext extends JComponent {
 	private Image image = GREEN_PLANE;
 	private double angle = 0;
 
-	private String mouseOverLabel = null;
-
 	private int delay = 0;
 
 	private FlightInfo flightInfo;
 
 	private CoordinateReferenceSystem crs;
+	private GeodeticCalculator gc;
 
 	public DrawingContext(FlightInfo flightInfo, CoordinateReferenceSystem crs) {
 		this.flightInfo = flightInfo;
 		this.crs = crs;
+		this.gc = new GeodeticCalculator(crs);
 
 		// if (flightInfo.getAirline() != null) {
 		// this.image = GREEN_PLANE;
@@ -65,7 +65,6 @@ public class DrawingContext extends JComponent {
 		setMaximumSize(size);
 		setSize(size);
 		setLayout(null);
-		this.setToolTipText(String.format("%s %s\n%s", flightInfo.getFlightNum(), flightInfo.getAircraft(), flightInfo.getFromIata()));
 	}
 
 	@Override
@@ -98,12 +97,6 @@ public class DrawingContext extends JComponent {
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D) g;
-
-		g2d.setColor(Color.GREEN);
-		if (mouseOverLabel != null) {
-			g2d.drawString("XXX", this.getLocation().x, this.getLocation().y);
-		}
-
 		AffineTransform tx = AffineTransform.getRotateInstance(angle, image.getWidth(null) / 2,
 				image.getHeight(null) / 2);
 		g2d.drawImage(image, tx, null);
@@ -120,7 +113,6 @@ public class DrawingContext extends JComponent {
 		newX = newX - this.image.getWidth(null) / 2;
 		newY = newY - this.image.getHeight(null) / 2;
 
-		Point currentLoc = this.getLocation();
 		Point newLoc = new Point(newX, newY);
 
 		this.setLocation(newLoc);
@@ -138,10 +130,6 @@ public class DrawingContext extends JComponent {
 		return flightInfo;
 	}
 
-	public void setFlightInfo(FlightInfo flightInfo) {
-		this.changePosition(flightInfo);
-	}
-
 	@Override
 	public String toString() {
 		// return "DrawingContext [spriteEnv=" + spriteEnv + ", flightInfo=" +
@@ -149,11 +137,17 @@ public class DrawingContext extends JComponent {
 		return flightInfo.getFlightNum();
 	}
 
-	public void changePosition(FlightInfo flightInfo) {
+	public void changePosition(double previousLat, double previousLon) {
+		
 		if (this.flightInfo != null) {
+			this.setToolTipText(String.format("<html>%s %s<br>%s %s<br>%s %s</html>", flightInfo.getFlightNum(),
+					flightInfo.getAircraft(), flightInfo.getAltitude(), flightInfo.getGroundSpeed(),
+					flightInfo.getFromIata(), flightInfo.getToIata()));
+			
 			try {
-				GeodeticCalculator gc = new GeodeticCalculator(crs);
-				gc.setStartingGeographicPoint(this.flightInfo.getLon(), this.flightInfo.getLat());
+				
+				//logger.debug("changePosition " + previousLon + " -> " + flightInfo.getLon());
+				gc.setStartingGeographicPoint(previousLon, previousLat);
 				gc.setDestinationGeographicPoint(flightInfo.getLon(), flightInfo.getLat());
 
 				// in degrees so we convert to radians
@@ -162,8 +156,6 @@ public class DrawingContext extends JComponent {
 				logger.error("Error calculating angle: " + e.getMessage());
 			}
 		}
-
-		this.flightInfo = flightInfo;
 	}
 
 	public int getDelay() {

@@ -9,13 +9,8 @@ public class FlightInfo {
     private String aircraft;
     private String fromIata;
     private String toIata;
-    
-    public FlightInfo(String flightNum, double lat, double lon) {
-        super();
-        this.flightNum = flightNum;
-        this.lat = lat;
-        this.lon = lon;
-    }
+    private int altitude;
+    private int groundSpeed;
 
     public String getFlightNum() {
         return flightNum;
@@ -29,7 +24,7 @@ public class FlightInfo {
         return lat;
     }
 
-    public void setLat(int lat) {
+    public void setLat(double lat) {
         this.lat = lat;
     }
 
@@ -101,6 +96,22 @@ public class FlightInfo {
 
 	public void setToIata(String toIata) {
 		this.toIata = toIata;
+	}
+
+	public int getAltitude() {
+		return altitude;
+	}
+
+	public void setAltitude(int altitude) {
+		this.altitude = altitude;
+	}
+
+	public int getGroundSpeed() {
+		return groundSpeed;
+	}
+
+	public void setGroundSpeed(int groundSpeed) {
+		this.groundSpeed = groundSpeed;
 	}
 
 }
