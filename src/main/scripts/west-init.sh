@@ -1,14 +1,15 @@
 #!/bin/bash
 
-WEST=192.168.2.101
+WORLD=192.168.2.100
 
 mongo replicationConfig <<EOF
+db.replicationConfig.drop()
 db.replicationConfig.save(
   {
-	"_id" : NumberLong(0),
+	"_id" : NumberLong(2),
 	"replicationSources" : [
 		{
-			"oplogBaseQuery" : "{ns:'world.flightTrack'}",
+			"oplogBaseQuery" : "{ns:'region.flightTrack'}",
 			"hostname" : "localhost",
 			"port" : 27017
 		}
@@ -17,22 +18,17 @@ db.replicationConfig.save(
 )
 db.replicationConfig.save(
   {
-	"_id" : NumberLong(1),
+	"_id" : NumberLong(3),
 	"replicationSources" : [
 		{
-			"oplogBaseQuery" : "{ns:'region.flightTrack', 'o.airline':{\$exists:true}}",
-			"hostname" : "$WEST",
+			"oplogBaseQuery" : "{ns:'world.flightTrack', 'o.region':{\$ne:'west'}}",
+			"hostname" : "$WORLD",
 			"port" : 27017
 		}
 	],
 	"replicationTarget" : {
 		"collectionMappings" : [ ],
-		"databaseMappings" : [
-			{
-				"sourceDatabaseName" : "region",
-				"destinationDatabaseName" : "world"
-			}
-		],
+		"databaseMappings" : [ ],
 		"hostname" : "localhost",
 		"port" : 27017
 	}
