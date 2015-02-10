@@ -6,6 +6,9 @@ public class FlightInfo {
     private double lat;
     private double lon;
     private String airline;
+    private String aircraft;
+    private String fromIata;
+    private String toIata;
     
     public FlightInfo(String flightNum, double lat, double lon) {
         super();
@@ -75,5 +78,29 @@ public class FlightInfo {
     public void setAirline(String airline) {
         this.airline = airline;
     }
+
+	public String getAircraft() {
+		return aircraft;
+	}
+
+	public void setAircraft(String aircraft) {
+		this.aircraft = aircraft;
+	}
+
+	public String getFromIata() {
+		return fromIata;
+	}
+
+	public void setFromIata(String fromIata) {
+		this.fromIata = fromIata;
+	}
+
+	public String getToIata() {
+		return toIata;
+	}
+
+	public void setToIata(String toIata) {
+		this.toIata = toIata;
+	}
 
 }
