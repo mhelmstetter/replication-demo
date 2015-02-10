@@ -37,7 +37,7 @@ public class FileTimestampPersister extends AbstractTimestampPersister implement
             OutputStream out = new FileOutputStream(new File(getFilename()));
             writer = new OutputStreamWriter(out, "UTF-8");
             String tsString = Integer.toString(lastTimestamp.getTime()) + "|" + Integer.toString(lastTimestamp.getInc());
-            logger.debug("writeLastTimestamp() " + tsString);
+            logger.trace("writeLastTimestamp() " + tsString);
             writer.write(tsString);
         } catch (Exception e) {
             e.printStackTrace();
