@@ -166,7 +166,7 @@ public class OplogTailThread extends Thread {
                     }
                 } catch (com.mongodb.MongoException.CursorNotFound ex) {
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    System.out.println("Cursor not found, waiting");
+                    logger.warn("Cursor not found, waiting");
                     Thread.sleep(2000);
                 } catch (com.mongodb.MongoInternalException ex) {
                     logger.warn("Cursor not found, waiting");
@@ -175,12 +175,12 @@ public class OplogTailThread extends Thread {
                     // ex.printStackTrace();
                 } catch (com.mongodb.MongoException ex) {
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    System.out.println("Internal exception, waiting");
+                    logger.warn("Internal error", ex);
                     Thread.sleep(2000);
                 } catch (Exception ex) {
                     killMe = true;
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    ex.printStackTrace();
+                    logger.warn("Internal error", ex);
                     break;
                 }
             }
