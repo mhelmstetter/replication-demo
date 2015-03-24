@@ -55,9 +55,11 @@ public class OplogTailThread extends Thread {
     private DBObject baseQuery;
 
     private MongoClient mongoClient;
+    private ReplicationSource replicationSource;
 
     public void initialize(ReplicationSource replicationSource, ReplicationConfig parentConfig)
             throws UnknownHostException {
+        this.replicationSource = replicationSource;
         mongoClient = new MongoClient(replicationSource.getHostname(), replicationSource.getPort());
         this.setBaseQueryJson(replicationSource.getOplogBaseQuery());
         oplog = mongoClient.getDB("local").getCollection("oplog.rs");
@@ -155,7 +157,7 @@ public class OplogTailThread extends Thread {
                                 timestampPersister.writeLastTimestamp(lastTimestamp);
                                 lastWrite = System.currentTimeMillis();
                             }
-
+                            Thread.yield();
                             long duration = System.currentTimeMillis() - lastOutput;
                             if (duration > reportInterval) {
                                 report(this.getName(), count, skips, System.currentTimeMillis() - startTime,
@@ -166,21 +168,21 @@ public class OplogTailThread extends Thread {
                     }
                 } catch (com.mongodb.MongoException.CursorNotFound ex) {
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    logger.warn("Cursor not found, waiting");
+                    logger.warn("Cursor not found, waiting " + replicationSource);
                     Thread.sleep(2000);
                 } catch (com.mongodb.MongoInternalException ex) {
-                    logger.warn("Cursor not found, waiting");
+                    logger.warn("MongoInternalException " + replicationSource);
                     // System.out.println();
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    // ex.printStackTrace();
+                    Thread.sleep(2000);
                 } catch (com.mongodb.MongoException ex) {
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    logger.warn("Internal error", ex);
+                    logger.warn("Internal error " + ex.getMessage());
                     Thread.sleep(2000);
                 } catch (Exception ex) {
                     killMe = true;
                     timestampPersister.writeLastTimestamp(lastTimestamp);
-                    logger.warn("Internal error", ex);
+                    logger.warn("Internal error " + ex.getMessage());
                     break;
                 }
             }
